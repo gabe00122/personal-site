@@ -1,4 +1,3 @@
-<h1>Gabriel Keith</h1>
 
 <p>I'm a software developer with intrests in game development, machine learning (especially reinforcement learning)
 	and varius other topics.
