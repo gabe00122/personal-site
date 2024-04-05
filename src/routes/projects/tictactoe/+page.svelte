@@ -6,12 +6,17 @@
     import Cell from "./cell.svelte";
 
     async function onCellClick(cellNumber: number) {
-        game = turn(game, cellNumber);
+        const isValidAction = game.board[cellNumber] === undefined;
 
-        const result = await modelWrapper.act(game);
-        
-        value = result.value;
-        game = turn(game, result.action);
+        if (game.result === "ongoing" && isValidAction) {
+            game = turn(game, cellNumber);
+            
+            if (game.result === "ongoing") {
+                const result = await modelWrapper.act(game);
+                value = result.value;
+                game = turn(game, result.action);
+            }
+        }
     }
 
     function resetGame() {

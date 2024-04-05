@@ -24,12 +24,11 @@ export class ModelWrapper {
 
         const preferences = tf.softmax(logits);
 
-        const jsPreferences = preferences.dataSync();
-        const jsValue = value.dataSync();
+        const jsPreferences = await preferences.data();
+        const jsValue = await value.data();
 
         let max = Number.MIN_VALUE;
         let greedyIndex = -1;
-        console.log(jsPreferences);
 
         for (let i = 0; i < jsPreferences.length; i++) {
             if (jsPreferences[i] > max) {
@@ -55,7 +54,6 @@ export class ModelWrapper {
                 return [0, 0, 1];
             }
         });
-        console.log(observationList);
 
         return tf.tensor(observationList);
     }

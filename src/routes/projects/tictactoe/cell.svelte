@@ -27,7 +27,7 @@
 <style>
     .cell {
         background-color: lightgray;
-        border: 1px solid black;
+        border: 1px solid gray;
         cursor: pointer;
     }
 

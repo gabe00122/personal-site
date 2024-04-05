@@ -20,13 +20,14 @@ export const initalGameState: GameState = {
 
 export function turn(state: GameState, action: number): GameState {
     const board = [...state.board];
+    const activePlayer = state.activePlayer;
 
     board[action] = state.activePlayer;
 
     return {
         board,
-        activePlayer: nextPlayer(state.activePlayer),
-        result: checkWon(state) ? "won" : (checkOver(state) ? "draw" : "ongoing"),
+        activePlayer: nextPlayer(activePlayer),
+        result: checkWon(board, activePlayer) ? "won" : (checkOver(board) ? "draw" : "ongoing"),
     }
 }
 
@@ -38,7 +39,7 @@ function nextPlayer(player: Player): Player {
     }
 }
 
-function checkWon(state: GameState): boolean {
+function checkWon(board: Cell[], activePlayer: Player): boolean {
     const patterns = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
         [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -47,7 +48,7 @@ function checkWon(state: GameState): boolean {
 
     outer: for (const pattern of patterns) {
         for (const index of pattern) {
-            if (state.board[index] !== state.activePlayer) {
+            if (board[index] !== activePlayer) {
                 continue outer;
             }
         }
@@ -58,6 +59,6 @@ function checkWon(state: GameState): boolean {
 }
 
 
-function checkOver(state: GameState): boolean {
-    return state.board.every((cell) => cell !== undefined);
+function checkOver(board: Cell[]): boolean {
+    return board.every((cell) => cell !== undefined);
 }
