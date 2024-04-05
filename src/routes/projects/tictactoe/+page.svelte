@@ -55,5 +55,8 @@
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         grid-template-rows: repeat(3, 1fr); 
+        gap: 2px;
+
+        background-color: black;
     }
 </style>
