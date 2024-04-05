@@ -10,7 +10,7 @@
         <ul>
           <li><a lang="en" href="/">About</a></li>
           <li><a lang="en" href="/blog">Blog</a></li>
-          <!-- <li><a lang="en" href="/projects">Projects</a></li> -->
+          <li><a lang="en" href="/projects">Projects</a></li>
           <!-- <li><a lang="en" href="/music">Music</a></li> -->
         </ul>
       </nav>
