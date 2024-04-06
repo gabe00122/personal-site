@@ -54,6 +54,10 @@ export class ModelWrapper {
                 return [0, 0, 1];
             }
         });
+        
+        //It's always the models turn
+        observationList.push(1.0);
+        observationList.push(0.0);
 
         return tf.tensor(observationList);
     }

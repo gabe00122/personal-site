@@ -43,7 +43,7 @@
     {/each}
 </div>
 
-<div>The AI's value: {value}</div>
+<div>Critic Value: {value}</div>
 
 <button on:click={resetGame}>Reset</button>
 
