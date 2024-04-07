@@ -24,24 +24,29 @@ export class ModelWrapper {
 
         const preferences = tf.softmax(logits);
 
-        const jsPreferences = await preferences.data();
-        const jsValue = await value.data();
+        const jsPreferences = [...await preferences.data()];
+        const jsValue = (await value.data())[0];
 
-        let max = Number.MIN_VALUE;
-        let greedyIndex = -1;
-
-        for (let i = 0; i < jsPreferences.length; i++) {
-            if (jsPreferences[i] > max) {
-                greedyIndex = i;
-                max = jsPreferences[i];
-            }
-        }
+        const action = ModelWrapper.#samplePreference(jsPreferences);
 
         return {
-            action: greedyIndex,
-            preferences: [...jsPreferences],
-            value: jsValue[0],
+            action,
+            preferences: jsPreferences,
+            value: jsValue,
         };
+    }
+
+    static #samplePreference(preferences: number[]): number {
+        const random = Math.random();
+        let sum = 0;
+
+        for (let i = 0; i < preferences.length; i++) {
+            sum += preferences[i];
+            if (sum >= random) {
+                return i;
+            }
+        }
+        return preferences.length - 1;
     }
 
     static #encodeObservation(game: GameState): tf.Tensor<tf.Rank> {
