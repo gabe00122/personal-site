@@ -117,7 +117,7 @@
     <div class="control-group">
         <label>
             <input type="checkbox" name="english" bind:checked={showPreferences} />
-            Show Preferneces
+            Show preferences
         </label>
     </div>
 {/if}
