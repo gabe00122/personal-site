@@ -19,11 +19,11 @@
 	</hgroup>
 
   <!-- Tags -->
-	<div class="tags">
+	<!-- <div class="tags">
 		{#each data.meta.categories as category}
 			<span class="surface-4">&num;{category}</span>
 		{/each}
-	</div>
+	</div> -->
 
   <!-- Post -->
 	<div class="prose">

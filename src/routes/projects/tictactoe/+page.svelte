@@ -80,6 +80,11 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Learning Tic Tac Toe with Reinforcment</title>
+	<meta name="description" content="Challenge yourself against an (nearly) unbeatable Tic Tac Toe AI powered by Reinforcement Learning. Can you outsmart the machine and win the classic game?">
+</svelte:head>
+
 {#if gameStart}
 	<div class="control-group">
 		<button on:click={playAsX}>I want to go first</button>
