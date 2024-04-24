@@ -13,7 +13,14 @@ published: true
 
 ## Introduction
 
-In this series I'm going to talk about how I implemented a custom actor critic algorithem in jax. This project was primally meant as a learning project. If your just trying to get results on an enviroment it would be better to use something like PPO but I think the exercise of a custom implementation is still intresting.
+I recently finished reading Reinforcement Learning: An Introduction by Sutton and Barto and thought it would be a good learning experience to implement some of the algorithems in the book myself. The goal of these blog posts are to document my experiements implmenting an actor critic based on that book and beyond. I used this actor critic implementation first learn relativly simple problems like balancing a pole on a cart or swinging a penulum, next i used to to achieve decent results on the gym enviroment lunar lander. Finally I used this algorithem to learn to play tic tac toe as well as a softmax algorithem purly from experience playing against itself.
+
+
+Namely they provide some mechnism to handle the exploration vs explitoation trade off that seems better then the near greedy popular in Q learning based methods. This means that the probability that an agent takes an action should roughly match the odds that the actions provides the best rewards (this is known as the matching law in physcology).
+
+Furthermoor they can be applied to both continusous or decrete actions spaces giving these algorithems a wide range of applicability.
+
+To implement these methods I choose to use jax because it has the potential to provide very fast RL training if the enviroment is also written with jax.
 
 * Part 1 (this post) - Basic implementation
 * Part 2 - Vectorized training
@@ -23,7 +30,17 @@ In this series I'm going to talk about how I implemented a custom actor critic a
 
 ### Algorithem Overview
 
-An actor critic algorithem uses temporal difference learning to predict the expected reward, this can either be a cumulative reward for the entire episode or a rate of reward per enviroment step. While for episodic enviroments discounted rewards work, these have theoretical issues for continousus enviroements and a rate of reward should be used instead. Never the less it is more common to implemented it using a discounted cumulative reward and for this implementation that's what we use.
+An actor critic is made up of two primary components.
+
+First the actor which:
+When given a observation of an enviroment predicts an action that will maximize a reward signal for the agent.
+
+And a critic which:
+When given a observation of an enviroment predicts the expected reward that will be received (either cumulativly or as an rate of reward over time)
+
+
+The purpose of the ciritc is to calculated temproal difference error is a measure of the change in reward expectation over one or more enviroment steps. 
+Calculated it over a single step is called TD(0) which is what I implemented.
 
 The definition of a 1-step actor critic is as follows:
 
