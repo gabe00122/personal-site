@@ -151,8 +151,11 @@ class ActorCritic:
         # Calculate the TD error
         state_value = self.critic_model.apply(critic_params, obs)
         td_error = rewards - state_value
-        if not done:
-            td_error += discount * self.critic_model.apply(critic_params, next_obs)
+        td_error += jax.lax.cond(
+            done,
+            lambda: 0,  # if the episode is over our next predicted reward is always zero
+            lambda: discount * self.critic_model.apply(critic_params, next_obs)
+        )
 
         # Update the critic
         critic_gradient = jax.grad(self.critic_model.apply)(critic_params, obs)
@@ -163,9 +166,7 @@ class ActorCritic:
         )
 
         # Update the actor
-        actor_gradient = jax.grad(self.action_log_probability)(
-            actor_params, obs, actions
-        )
+        actor_gradient = jax.grad(self.action_log_probability)(actor_params, obs, actions)
         actor_params = update_params(
             actor_params,
             actor_gradient,
