@@ -6,6 +6,7 @@ import { getHighlighter } from 'shiki';
 
 import remarkUnwrapImages from 'remark-unwrap-images'
 import rehypeSlug from 'rehype-slug';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 import rehypeKatexSvelte from "rehype-katex-svelte";
 import remarkMath from 'remark-math'
@@ -27,7 +28,7 @@ const mdsvexOptions = {
 		}
 	},
 	remarkPlugins: [remarkMath, remarkUnwrapImages],
-	rehypePlugins: [rehypeKatexSvelte, rehypeSlug]
+	rehypePlugins: [rehypeKatexSvelte, rehypeSlug, rehypeAutolinkHeadings]
 }
 
 /** @type {import('@sveltejs/kit').Config} */

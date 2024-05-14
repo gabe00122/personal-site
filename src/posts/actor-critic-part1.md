@@ -30,7 +30,7 @@ An actor critic algorithm is a machine learning algorithm that use a critic mode
 * They learn to match they're action preferences to the probablity that a action will lead to the best reward (see https://en.wikipedia.org/wiki/Matching_law)
 * They can be used for both discrete actions and contiousus actions
 
-### Design Choice 1 - Critic Type
+## Design Choice 1 - Critic Type
 1. Estimate the discounted culmlative reward
 	* Advantages: It's easy to tell if your critic values are accurate
 	* Disadvantages: Episodes with many steps lead can lead to culmlative rewards that are very high. Not equiped to deal for very long time episodes.
@@ -39,15 +39,20 @@ An actor critic algorithm is a machine learning algorithm that use a critic mode
 
 In this implementation we use cumulative rewards.
 
-### Design Choice 2 - Number of steps
+## Design Choice 2 - Number of steps
 1. single-step
+    * TD fixed point is closer to the true local minima for the policy
 2. n-step
-3. Eligibility traces
+    * TD fixed point is farther away with more steps but the algorithem can converge faster
+    * More steps can be more computationly costly
+3. eligibility traces
+    * Similar to n-step TD but represented as a trace vector of weights
+    * Can represent a large number of steps with a fixed computational cost
 
 In this implementation we use single step because it's easier to implement
 
 
-#### One-step Actor-Critic (episodic), for estimating $\pi_\theta\approx\pi_*$
+## One-step Actor-Critic (episodic), for estimating $\pi_\theta\approx\pi_*$
 > Input: a differentiable policy parameterization $\pi(a|s,\boldsymbol{\theta})$  
 > Input: a differentiable state-value function parameterization $\hat{\upsilon}(s,\bold{w})$  
 > Parameters: step sizes $\alpha^\theta > 0, \alpha^w > 0$  
@@ -64,21 +69,81 @@ In this implementation we use single step because it's easier to implement
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$I \leftarrow \gamma I$  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$S \leftarrow S'$
 
-#### Implementation
+## Implementation
 
-
+### Network Arcetecture
+Since we're using deep learning for our functional approximation first we need to define a our network arcetecture with flax.  
+See: https://flax.readthedocs.io/en/latest/guides/flax_fundamentals/flax_basics.html#module-basics for more details
 ```python
-import jax
-from jax import random, numpy as jnp
-from jax.typing import ArrayLike
 from flax import linen as nn
-from optax import Schedule
-from typing import NamedTuple, Any
+from collections.abc import Callable, Sequence
 
+class MlpBody(nn.Module):
+    features: Sequence[int]
+    activation: Callable[[Array], Array] = nn.relu
+
+    @nn.compact
+    def __call__(self, inputs):
+        x = inputs
+
+        for i, feat in enumerate(self.features):
+            x = nn.Dense(
+                feat,
+                name=f"mlp_layer_{i}",
+                kernel_init=nn.initializers.he_normal(),
+            )(x)
+            x = self.activation(x)
+        return x
+
+# The critic head outputs a scaler value which can be used as a value function
+class CriticHead(nn.Module):
+    @nn.compact
+    def __call__(self, inputs):
+        value = nn.Dense(
+            1,
+            name="critic_head",
+            kernel_init=nn.initializers.he_uniform(),
+        )(inputs)
+        return jnp.squeeze(value)
+
+# This descrete actor head outputs a logit for each of n-number possible actions, these logits will be used to represent a distribution of actor preferences.
+# The goal of our algorithem is to increase the preference for good actions and descrease the prefence for bad actions.
+class ActorHead(nn.Module):
+    actions: int
+
+    @nn.compact
+    def __call__(self, inputs):
+        actor_logits = nn.Dense(
+            self.actions,
+            name="actor_head",
+            kernel_init=nn.initializers.he_uniform(),
+        )(inputs)
+
+        return actor_logits
+
+# We can define full networks by sequencing the mlp with the actor and critic heads
+actor_model = nn.Sequential((
+    MlpBody(features=(64, 64)),
+    ActorHead(actions=action_space),
+))
+critic_model = nn.Sequential((
+    MlpBody(features=(64, 64)),
+    CriticHead(),
+))
+```
+
+### Actor Critic class
+
+At this point we could initalize a network and use it as our agent but without the right parameters it likely won't make very good decisions. We need a way to optimize the parameters, so let's start by defining some types to help orginize.
+Optax provides an easy way to define hyperparameter schedules.
+```python
+from optax import Schedule
+from dataclasses import dataclass
 
 class TrainingState(NamedTuple):
-    actor_params: Any
-    critic_params: Any
+    importance: ArrayLike # a float scaler and I from the algorithem
+    actor_params: Any     # parameters from our actor network
+    critic_params: Any    # parameters from our critic networl
 
 
 class Metrics(NamedTuple):
@@ -87,101 +152,52 @@ class Metrics(NamedTuple):
 
 
 class HyperParameters(NamedTuple):
-    discount: Schedule
-    actor_learning_rate: Schedule
-    critic_learning_rate: Schedule
+    discount: Schedule             # this is γ
+    actor_learning_rate: Schedule  # this is αw
+    critic_learning_rate: Schedule # this is αθ
 
 
 class ModelUpdateParams(NamedTuple):
-    step: ArrayLike
-    importance: ArrayLike
+    step: ArrayLike     # total training steps used for hyper parameter schedule
 
-    # Just remember SARS(A)
-    obs: ArrayLike  # S
-    actions: ArrayLike  # A
-    rewards: ArrayLike  # R
-    next_obs: ArrayLike  # S
-    done: ArrayLike
+    obs: ArrayLike      # this is S
+    actions: ArrayLike  # this is A
+    rewards: ArrayLike  # this is R
+    next_obs: ArrayLike # this is S′
+    done: ArrayLike     # this is a boolean for if S′ is a terminal state
 
-
+@dataclass(frozen=True)
 class ActorCritic:
-    def __init__(
-        self,
-        actor_model: nn.Module,
-        critic_model: nn.Module,
-        hyper_parameters: HyperParameters,
-    ):
-        self.actor_model = actor_model
-        self.critic_model = critic_model
-        self.hyper_parameters = hyper_parameters
+    actor_model: nn.Module  # w
+    critic_model: nn.Module # θ
+    hyper_parameters: HyperParameters
 
+    def init(self, state_space: int, rng_key: ArrayLike) -> TrainingState:
+        ...
+    
     def sample_action(
-        self, training_state: TrainingState, obs: ArrayLike, key: ArrayLike
+        self, training_state: TrainingState, obs: ArrayLike, rng_key: ArrayLike
     ):
-        logits = self.actor_model.apply(training_state.actor_params, obs)
-        return random.categorical(key, logits)
+        ...
 
     def action_log_probability(self, actor_params, obs: ArrayLike, action: ArrayLike):
-        logits = self.actor_model.apply(actor_params, obs)
-        action_softmax = nn.softmax(logits)
-        selected_action_softmax = action_softmax[action]
-
-        return jnp.log(selected_action_softmax)
-
+        ...
+    
     def update_models(
         self, training_state: TrainingState, params: ModelUpdateParams
     ) -> tuple[TrainingState, Metrics]:
-        actor_params = training_state.actor_params
-        critic_params = training_state.critic_params
-        step = params.step
-        importance = params.importance
+        ...
+```
 
-        # Just remember SARSA expect we skip the final action here
-        obs = params.obs  # State
-        actions = params.actions  # Action
-        rewards = params.rewards  # Reward
-        next_obs = params.next_obs  # State
-        done = params.done  # Also State
-
-        # Let's calculate are hyperparameters from the schedule
-        discount = self.hyper_parameters.discount(step)
-        actor_learning_rate = self.hyper_parameters.actor_learning_rate(step)
-        critic_learning_rate = self.hyper_parameters.critic_learning_rate(step)
-
-        # Calculate the TD error
-        state_value = self.critic_model.apply(critic_params, obs)
-        td_error = rewards - state_value
-        td_error += jax.lax.cond(
-            done,
-            lambda: 0,  # if the episode is over our next predicted reward is always zero
-            lambda: discount * self.critic_model.apply(critic_params, next_obs)
-        )
-
-        # Update the critic
-        critic_gradient = jax.grad(self.critic_model.apply)(critic_params, obs)
-        critic_params = update_params(
-            critic_params,
-            critic_gradient,
-            critic_learning_rate * td_error,
-        )
-
-        # Update the actor
-        actor_gradient = jax.grad(self.action_log_probability)(actor_params, obs, actions)
-        actor_params = update_params(
-            actor_params,
-            actor_gradient,
-            actor_learning_rate * importance * td_error,
-        )
-
-        # Record Metrics
-        metrics = Metrics(td_error, state_value)
-
-        return TrainingState(actor_params, critic_params), metrics
-
-
-def update_params(params, grad, step_size):
-    return jax.tree_map(
-        lambda param, grad_param: params + step_size * grad_param, params, grad
-    )
-
+#### Sample Action
+We need to define the sample action function which represents $\pi (\sdot|S,\boldsymbol{\theta})$ from our formula above.  
+Luckily jax can already sample from a logit distribution with `random.categorical`  
+Using `static_argnums` tells jax to treat the self object as a static parameter for jit compilation.  
+```python
+    @partial(jax.jit, static_argnums=(0,))
+    def sample_action(
+        self, training_state: TrainingState, obs: ArrayLike, rng_key: ArrayLike
+    ):
+        logits = self.actor_model.apply(training_state.actor_params, obs)
+        return random.categorical(rng_key, logits)
 ```
