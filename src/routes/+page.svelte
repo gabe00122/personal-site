@@ -10,3 +10,4 @@
 <p>This is place to document the projects I'm working on and write about whatever I'm currently learning.</p>
 
 <a href="https://github.com/gabe00122">Github</a>
+<a href="https://www.linkedin.com/in/gabriel-keith/">Linkedin</a>
