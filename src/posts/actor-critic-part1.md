@@ -11,6 +11,10 @@ categories:
 published: true
 ---
 
+<script>
+    import VideoPlayer from "../routes/components/video.svelte";
+</script>
+
 # Introduction
 
 * Part 1 (this post) - Basic implementation
@@ -295,3 +299,7 @@ for step in range(total_steps):
 For a full example of the code see: https://github.com/gabe00122/tutorial_actor_critic/tree/main/tutorial_actor_critic/part1
 
 Training results:
+
+![image](/blog/actorcritic/cartpole-rewards.png)
+
+<VideoPlayer />
