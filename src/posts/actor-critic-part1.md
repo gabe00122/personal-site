@@ -1,5 +1,5 @@
 ---
-title: Actor Critic (part 1)
+title: Basic Actor Critic
 description: Implement a actor critic from scratch in jax
 date: '2023-4-14'
 categories:
@@ -17,25 +17,30 @@ published: true
 
 # Introduction
 
-* Part 1 (this post) - Basic implementation
-* Part 2 - Vectorized training
-* Part 3 - Adam and regularization
-* Part 4 - Self play for learning muti-agent environments
-* Part 5 (bonus) - Deploying the model to the web with tensorflow.js
+I recently finished reading [Reinforcement Learning: An Introduction by Sutton and Barto](http://incompleteideas.net/book/the-book-2nd.html). I decided to implement the actor critic algorithm outlined in the book and learned a lot in the process. The first step in my implementation was taking the psudo code as outline in the book and translating it to jax. If your brand new to reinforcement learning it's probably better to start by implementing a solution to a muti-armed bandit and formularize yourself with temporal difference learning.
 
-I recently finished reading Reinforcement Learning: An Introduction by Sutton and Barto. I decided to implement the actor critic algorithm outlined in the book and learned a lot in the process.
+## Reinforcement Learning
+Reinforcement learning is a class of algorithms, the goal is to training a model called a policy to take actions that maximize a total reward received over time. It's called reinforcement learning because the reward can reinforce the the behaviors of the policy that lead to more reward.
 
-## Algorithm Gist
-An actor critic algorithm is a machine learning algorithm that use a critic model to teach a actor model to take actions that will maximize some future reward.  These models can use any sort of functional approximation but in this tutorial we use artificial neural networks.
+Reinforcement learning algorithms require some form of functional approximation and one particularly effective form of functional approximation is deep learning. Reinforcement learning algorithms that use deep learning are called deep reinforcement learning.
 
-If you have a function to approximate the cumulative reward over an entire episode and you take the difference for the reward prediction with observations from the `n` and `n+1` time steps that gives you a expected instantaneous reward at the `n` time step. The difference between the expected reward and the received reward is called temporal difference error. Temporal difference error can be minimized with semi-gradient decent to improve our critic predictions but it can also be used to make a action preference in the policy stronger or weaker depending on if the error is positive or negative.  
+## Actor Critics
+Actor Critic's are a class are reinforcement learning algorithms that use two models to teach each other, an actor and a critic. Both the actor and the critic take in a observation of the environment as input but they output different things.
 
-Action selection driven by the temporal difference error will converge towards a preference that matches how likely it is that a given action will yield the highest cumulative reward.
+* The actor outputs an action distribution (from which an action can be sampled)
+* The critic outputs a prediction of the total reward left to receive in the episode or a prediction of the future rate of reward.
 
+The critics predictions always depend on the current policy, a better policy can generally be anticipated to receive more rewards for example. So when the actor improves the critic needs to up dated to match the improved performance of the new actor.
 
-Here is the complete pseudo code for a one step actor critic, note this is not the only kind of actor-critic for example you could use n-steps or eligibility traces or calculated the average reward instead of the cumulative reward.
+The actor model can use the critic's value estimations to shift the action distribution towards actions that lead to better reward predictions under the current actor.
+
+In this way the actor and critic are in a balancing act of change that towards a better policy.
+
+# Implementation
+I started with the psudo code for a one-step actor critic from Sutton and Barto, I highly recommend reading this book yourself but I'll do my best translating the notation into a plain english explanation the best I can. 
 
 ## One-step Actor-Critic (episodic), for estimating $\pi_\theta\approx\pi_*$
+
 > Input: a differentiable policy parameterization $\pi(a|s,\boldsymbol{\theta})$  
 > Input: a differentiable state-value function parameterization $\hat{\upsilon}(s,\bold{w})$  
 > Parameters: step sizes $\alpha^\theta > 0, \alpha^w > 0$  
@@ -50,185 +55,70 @@ Here is the complete pseudo code for a one step actor critic, note this is not t
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\bold{w} \leftarrow \bold{w} + \alpha^\bold{w} \delta \nabla \hat\upsilon (S,\bold{w})$  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha^{\boldsymbol{\theta}}I\gamma\nabla \ln \pi(A|S,\boldsymbol{\theta})$  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$I \leftarrow \gamma I$  
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$S \leftarrow S'$
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$S \leftarrow S'$  
 
-## Implementation
+TODO: Cite page number
 
-### Network architecture
-Since we're using deep learning for our functional approximation first we need to define a our network architecture with flax.  
-See: https://flax.readthedocs.io/en/latest/guides/flax_fundamentals/flax_basics.html#module-basics for more details
+Some notes on the above:
+* Variables
+  * $S$ is the observation from the environment or "state" this is the input both the actor and critic get about the environment during the current time step
+  * $\gamma$ is the discount, this is used to value rewards more farther in the future less the sooner rewards
+  * $I$ stands for the importance, it starts about at 1.0 but diminish's with the discount over the course of the episode. We use it to scale the actor learning rate down the more the episode has progressed.
+* Functions
+  * $\pi (\sdot|S,\boldsymbol{\theta})$ this is a function that samples a random action out of the action distribution
+  * $\pi(A|S,\boldsymbol{\theta})$ this gives of the likelihood a given action would be selected under the current policy
+  * $\hat{\upsilon}(S, \bold{w})$ this is the estimate of the cumulative discounted reward starting at S
+
+
+## Creating Deep Neural Networks
+I'm not going to go into great depth on this since there are plenty of other resources, but you can see how I initialized my neural networks for this algorithm here: [link](https://github.com/gabe00122/tutorial_actor_critic/blob/main/tutorial_actor_critic/mlp.py)  
+Also see the flax docs on how to initialize networks in jax: [link](https://flax.readthedocs.io/en/latest/quick_start.html#define-network)  
+
+## Sample an action
+$\pi (\sdot|S,\boldsymbol{\theta})$  
+
+We need a way to get select actions from our policy, the solution to this depends on what type of actions are required, for example continuous or discrete.
+For this tutorial we assume our action will always be one from a set of discrete actions, i.e A, B, C, or D
+A common way to handle this is to interpret the outputs of the actor model as [logits](https://en.wikipedia.org/wiki/Logit) for each of the possible actions. Lucky numpy (and therefor jax) has a built in function for picking a random action from a set of logits.
+
 ```python
-from flax import linen as nn
-from collections.abc import Callable, Sequence
-
-class MlpBody(nn.Module):
-    features: Sequence[int]
-    activation: Callable[[Array], Array] = nn.relu
-
-    @nn.compact
-    def __call__(self, inputs):
-        x = inputs
-
-        for i, feat in enumerate(self.features):
-            x = nn.Dense(
-                feat,
-                name=f"mlp_layer_{i}",
-                kernel_init=nn.initializers.he_normal(),
-            )(x)
-            x = self.activation(x)
-        return x
-
-# The critic head outputs a scaler value which can be used as a value function
-class CriticHead(nn.Module):
-    @nn.compact
-    def __call__(self, inputs):
-        value = nn.Dense(
-            1,
-            name="critic_head",
-            kernel_init=nn.initializers.he_uniform(),
-        )(inputs)
-        return jnp.squeeze(value)
-
-# This descrete actor head outputs a logit for each of n-number possible actions, these logits will be used to represent a distribution of actor preferences.
-# The goal of our algorithem is to increase the preference for good actions and descrease the prefence for bad actions.
-class ActorHead(nn.Module):
-    actions: int
-
-    @nn.compact
-    def __call__(self, inputs):
-        actor_logits = nn.Dense(
-            self.actions,
-            name="actor_head",
-            kernel_init=nn.initializers.he_uniform(),
-        )(inputs)
-
-        return actor_logits
-
-# We can define full networks by sequencing the mlp with the actor and critic heads
-actor_model = nn.Sequential((
-    MlpBody(features=(64, 64)),
-    ActorHead(actions=action_space),
-))
-critic_model = nn.Sequential((
-    MlpBody(features=(64, 64)),
-    CriticHead(),
-))
+def sample_action(
+    actor_model, training_state: TrainingState, obs: ArrayLike, rng_key: ArrayLike
+):
+    logits = self.actor_model.apply(training_state.actor_params, obs)
+    return random.categorical(rng_key, logits)
 ```
 
-### Defining some types
+## Update our parameters
+### Calculating the TD error
+$\delta \leftarrow R + \gamma \hat{\upsilon}(S', \bold{w}) - \hat{\upsilon}(S, \bold{w})$
 
-At this point we could initialize a network and use it as our agent but without the right parameters it likely won't make very good decisions. We need a way to optimize the parameters, so let's start by defining some types to help organize.
-Optax provides an easy way to define hyperparameter schedules.
+If our value function $\hat{\upsilon}(S, \bold{w})$ is an estimation of the total reward left to receive at observation S then. Then $\hat{\upsilon}(S, \bold{w}) - \hat{\upsilon}(S+n, \bold{w})$ should be an estimation of the reward received between S and S+n. If n is 1 meaning it's the next observation then this difference should be an estimation of the instantaneous reward at S. The difference between the estimated reward and the actual instantaneous reward is the temporal difference error $\delta$.
+
+If the observation is the episode terminal (done = True) than no further rewards are possible and so the state value should always be 0.0
+
+This TD error will be used to update both our critic to make better estimates and our actor to take actions that lead to more rewards.
+
 ```python
-from optax import Schedule
-from dataclasses import dataclass
-
-class TrainingState(NamedTuple):
-    importance: ArrayLike # a float scaler and I from the algorithem
-    actor_params: Any     # parameters from our actor network
-    critic_params: Any    # parameters from our critic networl
-
-
-class Metrics(NamedTuple):
-    td_error: float
-    state_value: float
-
-
-class HyperParameters(NamedTuple):
-    discount: Schedule             # this is γ
-    actor_learning_rate: Schedule  # this is αw
-    critic_learning_rate: Schedule # this is αθ
-
-
-class ModelUpdateParams(NamedTuple):
-    step: ArrayLike     # total training steps used for hyper parameter schedule
-
-    obs: ArrayLike      # this is S
-    actions: ArrayLike  # this is A
-    rewards: ArrayLike  # this is R
-    next_obs: ArrayLike # this is S′
-    done: ArrayLike     # this is a boolean for if S′ is a terminal state
-
-@dataclass(frozen=True)
-class ActorCritic:
-    actor_model: nn.Module  # w
-    critic_model: nn.Module # θ
-    hyper_parameters: HyperParameters
-
-    def init(self, state_space: int, rng_key: ArrayLike) -> TrainingState:
-        ...
-    
-    def sample_action(
-        self, training_state: TrainingState, obs: ArrayLike, rng_key: ArrayLike
-    ):
-        ...
-
-    def action_log_probability(self, actor_params, obs: ArrayLike, action: ArrayLike):
-        ...
-    
-    def update_models(
-        self, training_state: TrainingState, params: ModelUpdateParams
-    ) -> tuple[TrainingState, Metrics]:
-        ...
-```
-
-#### Sample Action
-We need to define the sample action function which represents $\pi (\sdot|S,\boldsymbol{\theta})$ from our formula above.  
-Luckily jax can already sample from a logit distribution with `random.categorical`  
-Using `static_argnums` tells jax to treat the self object as a static parameter for jit compilation. Calling this function with a observation vector from our environment will give us an action from the current policy.
-```python
-    @partial(jax.jit, static_argnums=(0,))
-    def sample_action(
-        self, training_state: TrainingState, obs: ArrayLike, rng_key: ArrayLike
-    ):
-        logits = self.actor_model.apply(training_state.actor_params, obs)
-        return random.categorical(rng_key, logits)
-```
-
-#### Updating the model
-Now were to the real meat and potato's of the implementation. Here we update the model weights using the n observation the n+1 observation and the reward in-between.  
-First we gather our hyper parameters (note these do not need to be on a schedule, this is just personal preference)
-```python
-def update_models(
-    self, training_state: TrainingState, params: ModelUpdateParams
-) -> tuple[TrainingState, Metrics]:
-    actor_params = training_state.actor_params
-    critic_params = training_state.critic_params
-    importance = training_state.importance
-    step = params.step
-
-    # Just remember SARSA expect we skip the final action here
-    obs = params.obs  # State
-    actions = params.actions  # Action
-    rewards = params.rewards  # Reward
-    next_obs = params.next_obs  # State
-    done = params.done  # Also State
-
-    # Let's calculate are hyperparameters from the schedule
-    discount = self.hyper_parameters.discount(step)
-    actor_learning_rate = self.hyper_parameters.actor_learning_rate(step)
-    critic_learning_rate = self.hyper_parameters.critic_learning_rate(step)
-```
-
-Now we can calculate our TD error, this is the difference between receded reward and expected reward.  
-This corresponds to $\delta \leftarrow R + \gamma \hat{\upsilon}(S', \bold{w}) - \hat{\upsilon}(S, \bold{w})$  
-```python
-def update_models(
-    self, training_state: TrainingState, params: ModelUpdateParams
-) -> tuple[TrainingState, Metrics]:
-    ...
-    
-    state_value = self.critic_model.apply(critic_params, obs)
-    td_error = rewards - state_value
-    td_error += jax.lax.cond(
+def temporal_difference_error(
+    critic_model, critic_params, discount, observation, reward, next_observation, done
+) -> float:
+    state_value = critic_model.apply(critic_params, observation)
+    next_state_value = jax.lax.cond(
         done,
-        lambda: 0.0,  # if the episode is over our next predicted reward is always zero
-        lambda: discount * self.critic_model.apply(critic_params, next_obs)
+        lambda: 0.0,
+        lambda: discount * critic_model.apply(critic_params, next_observation)
     )
+
+    estimated_reward = state_value - next_state_value
+    td_error = rewards - estimated_reward
+    
+    return td_error
 ```
 
-Updating the critic  
-This corresponds to $\bold{w} \leftarrow \bold{w} + \alpha^\bold{w} \delta \nabla \hat\upsilon (S,\bold{w})$  
+### Updating the critic  
+$\bold{w} \leftarrow \bold{w} + \alpha^\bold{w} \delta \nabla \hat\upsilon (S,\bold{w})$
+
 ```python
 def update_params(params, grad, step_size):
     return jax.tree_map(
@@ -237,12 +127,10 @@ def update_params(params, grad, step_size):
     )
 
 
-def update_models(
-    self, training_state: TrainingState, params: ModelUpdateParams
-) -> tuple[TrainingState, Metrics]:
-    ...
-
-    critic_gradient = jax.grad(self.critic_model.apply)(critic_params, obs)
+def update_critic(
+    critic_model, training_state: TrainingState, params: ModelUpdateParams
+):
+    critic_gradient = jax.grad(critic_model.apply)(critic_params, obs)
     critic_params = update_params(
         critic_params,
         critic_gradient,
@@ -250,8 +138,9 @@ def update_models(
     )
 ```
 
-And finally updating the actor  
-This corresponds to $\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha^{\boldsymbol{\theta}}I\gamma\nabla \ln \pi(A|S,\boldsymbol{\theta})$  
+### Updating the actor
+$\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha^{\boldsymbol{\theta}}I\gamma\nabla \ln \pi(A|S,\boldsymbol{\theta})$
+
 ```python
 def action_log_probability(self, actor_params, obs: ArrayLike, action: ArrayLike):
     logits = self.actor_model.apply(actor_params, obs)
@@ -272,6 +161,7 @@ def update_models(
 ```
 
 Training loop with [gym](https://gymnasium.farama.org/)
+
 ```python
 for step in range(total_steps):
     rng_key, action_key = random.split(rng_key)
@@ -300,6 +190,7 @@ For a full example of the code see: https://github.com/gabe00122/tutorial_actor_
 
 Training results:
 
-![image](/blog/actorcritic/cartpole-rewards.png)
+A line plot showing the sum reward for each episode, averaged over twenty separate training seeds
+![A line plot showing the sum reward for each episode, averaged over twenty separate training seeds](/blog/actorcritic/cartpole-rewards.png)
 
-<VideoPlayer />
+<VideoPlayer url="/blog/actorcritic/cartpole-post-training.mp4" />

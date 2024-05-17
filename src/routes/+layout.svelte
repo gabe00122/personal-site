@@ -1,14 +1,13 @@
 <script lang="ts">
-    import "@picocss/pico/css/pico.pumpkin.min.css";
+	import '@picocss/pico/css/pico.pumpkin.min.css';
 
-    import Header from "./header.svelte";
+	import Header from './header.svelte';
 </script>
 
 <div class="container">
-    <Header />
+	<Header />
 
-    <main>
-        <slot />
-    </main>
+	<main>
+		<slot />
+	</main>
 </div>
-
