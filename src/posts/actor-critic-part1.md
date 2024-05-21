@@ -17,27 +17,27 @@ published: true
 
 # Introduction
 
-I recently finished reading [Reinforcement Learning: An Introduction by Sutton and Barto](http://incompleteideas.net/book/the-book-2nd.html). I decided to implement the actor critic algorithm outlined in the book and learned a lot in the process. The first step in my implementation was taking the psudo code as outline in the book and translating it to jax. If your brand new to reinforcement learning it's probably better to start by implementing a solution to a muti-armed bandit and formularize yourself with temporal difference learning.
+I recently finished reading [Reinforcement Learning: An Introduction by Sutton and Barto](http://incompleteideas.net/book/the-book-2nd.html). Inspired by the book, I decided to implement the actor-critic algorithm and learned a lot in the process. My first step was translating the pseudocode outlined in the book into JAX. If you're new to reinforcement learning, it's better to start by implementing a solution to a multi-armed bandit problem and familiarize yourself with temporal difference learning.
 
 ## Reinforcement Learning
-Reinforcement learning is a class of algorithms, the goal is to training a model called a policy to take actions that maximize a total reward received over time. It's called reinforcement learning because the reward can reinforce the the behaviors of the policy that lead to more reward.
+Reinforcement learning is a class of algorithms designed to train a model, called a policy, to take actions that maximize the total reward received over time. It is called reinforcement learning because rewards reinforce behaviors that lead to higher rewards.
 
-Reinforcement learning algorithms require some form of functional approximation and one particularly effective form of functional approximation is deep learning. Reinforcement learning algorithms that use deep learning are called deep reinforcement learning.
+These algorithms require functional approximation, with deep learning being a particularly promising approach.
 
 ## Actor Critics
-Actor Critic's are a class are reinforcement learning algorithms that use two models to teach each other, an actor and a critic. Both the actor and the critic take in a observation of the environment as input but they output different things.
+Actor-critic algorithms are a class of reinforcement learning algorithms that use two models to teach each other: an actor and a critic. Both the actor and the critic take an observation of the environment as input but produce different outputs.
 
-* The actor outputs an action distribution (from which an action can be sampled)
-* The critic outputs a prediction of the total reward left to receive in the episode or a prediction of the future rate of reward.
+* The actor outputs an action distribution, from which an action can be sampled.
+* The critic outputs a prediction of the total reward remaining in the episode or a prediction of the future rate of reward.
 
-The critics predictions always depend on the current policy, a better policy can generally be anticipated to receive more rewards for example. So when the actor improves the critic needs to up dated to match the improved performance of the new actor.
+The critic's predictions always depend on the current policy; a better policy generally leads to more rewards. Thus, when the actor improves, the critic needs to be updated to match the improved performance of the new actor.
 
-The actor model can use the critic's value estimations to shift the action distribution towards actions that lead to better reward predictions under the current actor.
+The actor model can use the critic's value estimations to adjust the action distribution towards actions that lead to better reward predictions.
 
-In this way the actor and critic are in a balancing act of change that towards a better policy.
+In this way, the actor and critic engage in a balancing act, continually adjusting towards a better policy.
 
 # Implementation
-I started with the psudo code for a one-step actor critic from Sutton and Barto, I highly recommend reading this book yourself but I'll do my best translating the notation into a plain english explanation the best I can. 
+I started with the pseudocode for a one-step actor critic from Sutton and Barto, I highly recommend reading this book yourself but I'll do my best translating the notation into a plain english explanation the best I can. 
 
 ## One-step Actor-Critic (episodic), for estimating $\pi_\theta\approx\pi_*$
 
@@ -119,6 +119,15 @@ def temporal_difference_error(
 ### Updating the critic  
 $\bold{w} \leftarrow \bold{w} + \alpha^\bold{w} \delta \nabla \hat\upsilon (S,\bold{w})$
 
+The temporal difference error can be used to improve the critic predictions by moving in the direction of the gradient at S times the td_error.
+Value(S+1) + reward is a better prediction than value(S) and our td error already represents this difference.
+If we simply move a step in the direction of the gradient of the value at S multiplied by the td error our value estimations will improve.
+We're also providing a way for our later state predictions to influence our earlier state predictions
+so that with enough repetitions the predictions at the end of the episode should help determine the predictions at the beginning of the episode.
+
+This is technically semi-gradient decent because the gradient at value(S+1) is ignored,
+a consequence of this is that the value function doesn't converge to the true reward approximation but a point close to it called td fixed point.
+
 ```python
 def update_params(params, grad, step_size):
     return jax.tree_map(
@@ -128,7 +137,7 @@ def update_params(params, grad, step_size):
 
 
 def update_critic(
-    critic_model, training_state: TrainingState, params: ModelUpdateParams
+    critic_model, critic_params, obs, critic_learning_rate, td_error
 ):
     critic_gradient = jax.grad(critic_model.apply)(critic_params, obs)
     critic_params = update_params(
@@ -136,6 +145,8 @@ def update_critic(
         critic_gradient,
         critic_learning_rate * td_error,
     )
+    
+    return critic_params
 ```
 
 ### Updating the actor

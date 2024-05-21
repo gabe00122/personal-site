@@ -7,8 +7,8 @@
 </svelte:head>
 
 <p>
-	I'm a software developer with intrests in game development, machine learning (especially
-	reinforcement learning) and varius other topics.
+	I'm a software developer with interests in game development, machine learning (especially
+	reinforcement learning) and various other topics.
 </p>
 <p>Outside of software I like to play drums 🥁 and guitar 🎸.</p>
 <p>
