@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import * as tf from '@tensorflow/tfjs';
 	import { ModelWrapper } from './model';
-	import { initalGameState, turn } from './game';
+	import { initialGameState, turn } from './game';
 	import Cell from './cell.svelte';
 
 	async function onCellClick(cellNumber: number) {
@@ -18,10 +18,10 @@
 	}
 
 	function restart() {
-		game = initalGameState;
-		prevousGame = initalGameState;
+		game = initialGameState;
+		previousGame = initialGameState;
 		value = 0.0;
-		preferneces = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+		preferences = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 		gameStart = true;
 		aiHasMoved = false;
@@ -42,8 +42,8 @@
 		aiCalculating = true;
 
 		const result = await modelWrapper.act(game);
-		prevousGame = game;
-		preferneces = result.preferences;
+		previousGame = game;
+		preferences = result.preferences;
 		value = result.value;
 		game = turn(game, result.action);
 
@@ -64,9 +64,9 @@
 
 	let value = 0.0;
 
-	let preferneces = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-	let prevousGame = initalGameState;
-	let game = initalGameState;
+	let preferences = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+	let previousGame = initialGameState;
+	let game = initialGameState;
 
 	onMount(async () => {
 		if (!model) {
@@ -98,8 +98,8 @@
 {:else}
 	<div class="board">
 		{#each game.board as boardCell, index}
-			{#if aiHasMoved && showPreferences && prevousGame.board[index] === undefined}
-				<Cell cell={boardCell} on:click={() => onCellClick(index)} preference={preferneces[index]}
+			{#if aiHasMoved && showPreferences && previousGame.board[index] === undefined}
+				<Cell cell={boardCell} on:click={() => onCellClick(index)} preference={preferences[index]}
 				></Cell>
 			{:else}
 				<Cell cell={boardCell} on:click={() => onCellClick(index)}></Cell>
@@ -111,7 +111,7 @@
 		<div style="text-align: center;">
 			{#if game.result === 'draw'}
 				It's a draw!
-			{:else if playerWentFirst && game.activePlayer === 'O'}
+			{:else if playerWentFirst === (game.activePlayer === 'O')}
 				You won!
 			{:else}
 				You lost!

@@ -11,7 +11,7 @@ export interface GameState {
 }
 
 
-export const initalGameState: GameState = {
+export const initialGameState: GameState = {
     board: [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
     activePlayer: "X",
     result: "ongoing",
