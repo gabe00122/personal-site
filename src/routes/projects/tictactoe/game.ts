@@ -7,20 +7,11 @@ export interface GameState {
 	result: 'ongoing' | 'draw' | 'won';
 }
 
-export const initalGameState: GameState = {
-	board: [
-		undefined,
-		undefined,
-		undefined,
-		undefined,
-		undefined,
-		undefined,
-		undefined,
-		undefined,
-		undefined
-	],
-	activePlayer: 'X',
-	result: 'ongoing'
+
+export const initialGameState: GameState = {
+    board: [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+    activePlayer: "X",
+    result: "ongoing",
 };
 
 export function turn(state: GameState, action: number): GameState {
