@@ -2,11 +2,11 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { Cell } from './game';
 
-    const dispatch = createEventDispatcher();
+	const dispatch = createEventDispatcher();
 
-    function onClick() {
-        dispatch("click");
-    }
+	function onClick() {
+		dispatch('click');
+	}
 
 	export let preference: number | undefined = undefined;
 	export let cell: Cell;

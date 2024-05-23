@@ -7,11 +7,20 @@ export interface GameState {
 	result: 'ongoing' | 'draw' | 'won';
 }
 
-
 export const initialGameState: GameState = {
-    board: [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-    activePlayer: "X",
-    result: "ongoing",
+	board: [
+		undefined,
+		undefined,
+		undefined,
+		undefined,
+		undefined,
+		undefined,
+		undefined,
+		undefined,
+		undefined
+	],
+	activePlayer: 'X',
+	result: 'ongoing'
 };
 
 export function turn(state: GameState, action: number): GameState {
@@ -60,5 +69,5 @@ function checkWon(board: Cell[], activePlayer: Player): boolean {
 }
 
 function checkOver(board: Cell[]): boolean {
-	return board.every(cell => cell !== undefined);
+	return board.every((cell) => cell !== undefined);
 }
