@@ -12,7 +12,6 @@ published: true
 ---
 
 <script>
-    import "../routes/blog/blog.css";
     import VideoPlayer from "../routes/components/video.svelte";
     import Image from "../routes/components/image.svelte";
 </script>
@@ -163,6 +162,8 @@ def update_critic(
 
 $\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha^{\boldsymbol{\theta}}I\gamma\nabla \ln \pi(A|S,\boldsymbol{\theta})$
 
+We can also use the td error to select better actions. The basic idea is if the reward exceeds our expected reward for the state before the action was taken then we should increase the odds that that action is taken again in a similar state. If the reward is less than the expected reward we should decrease the odds that action is taken. Intuitively if you imagine that the value function is the average reward received for the actions selected by the current policy for that state then we are increasing the likelihood that better then average actions are taken and decreasing the likelihood that worse than average actions are taken. We use a log of the action probability in the gradient because if the action already has a high likelihood of being selected we want to adjust it less.
+
 ```python
 def action_log_probability(self, actor_params, obs: ArrayLike, action: ArrayLike):
     logits = self.actor_model.apply(actor_params, obs)
@@ -181,6 +182,9 @@ def update_models(
         actor_learning_rate * importance * td_error,
     )
 ```
+
+### Training loop
+Now we can bring it all together with a complete training loop with the gymnasium library (you can also use https://github.com/RobertTLange/gymnax for faster training speed) 
 
 Training loop with [gym](https://gymnasium.farama.org/)
 
@@ -232,3 +236,17 @@ discount=0.99
     description="A carpole policy after 2000 episodes training"
     alt="A video of a carpole policy after 2000 episodes training"
 />
+
+
+# What next
+
+This is only basic implementation of an actor critic, while it works for environments like cart pole if you want to handle more complicated problems more techniques are usually employed.
+Here are just a few of many examples for possible improvements
+
+* Use a little bit of calculus to reframe the algorithms update as a loss function, then it's simpler to employ optimizers like Adam
+* Having more data in a training batch can help stabilize training and a common strategy to this end is using a replay buffer but vectorized environment training like in the a3c paper can also be used
+* Certain explicit regularization techniques may be helpful for RL such as entropy regularization or l2
+* More steps could be used to speed up training or a target network to stabilize training.
+* Importance sampling could be used to account for off policy data
+
+Using an adam optimizer and vectorized training environments with some entropy regulation I used this algorithm to learn tic tac toe as can be seen in this [demo](/projects/tictactoe)
