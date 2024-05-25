@@ -129,6 +129,9 @@
 			Show preferences
 		</label>
 	</div>
+	<div class="centered-text">
+		See training code on <a href="https://github.com/gabe00122/tictactoe-rl">github</a>
+	</div>
 {/if}
 
 <style>
@@ -149,5 +152,9 @@
 		justify-content: center;
 		gap: 10px;
 		margin: 10px;
+	}
+
+	.centered-text {
+		text-align: center;;
 	}
 </style>

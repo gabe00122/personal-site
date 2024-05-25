@@ -12,7 +12,9 @@ published: true
 ---
 
 <script>
+    import "../routes/blog/blog.css";
     import VideoPlayer from "../routes/components/video.svelte";
+    import Image from "../routes/components/image.svelte";
 </script>
 
 # Introduction
@@ -208,9 +210,25 @@ for step in range(total_steps):
 
 For a full example of the code see: https://github.com/gabe00122/tutorial_actor_critic/tree/main/tutorial_actor_critic/part1
 
-Training results:
+# Results
 
-A line plot showing the sum reward for each episode, averaged over twenty separate training seeds
-![A line plot showing the sum reward for each episode, averaged over twenty separate training seeds](/blog/actorcritic/cartpole-rewards.png)
+Here are the hyper parameters I used for training
+```python
+total_steps = 800_000
+actor_learning_rate=linear_schedule(0.0001, 0.0, total_steps)
+critic_learning_rate=linear_schedule(0.0005, 0.0, total_steps)
+discount=0.99
+```
 
-<VideoPlayer url="/blog/actorcritic/cartpole-post-training.mp4" />
+<Image
+    url="/blog/actorcritic/cartpole-rewards.png"
+    description="Average reward per episode over 20 training seeds"
+    alt-text="a graph showing the agents nearing the max score in cart pole after 2000 episodes"
+/>
+
+
+<VideoPlayer
+    url="/blog/actorcritic/cartpole-post-training.mp4"
+    description="A carpole policy after 2000 episodes training"
+    alt="A video of a carpole policy after 2000 episodes training"
+/>
