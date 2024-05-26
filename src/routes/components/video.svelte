@@ -5,7 +5,7 @@
 
 <figure class="centered">
 	<figcaption id="video-caption" class="centered-text">{description}</figcaption>
-	<video autoplay loop muted aria-describedby="video-caption" class="bordered">
+	<video autoplay loop muted playsinline aria-describedby="video-caption" class="bordered">
 		<source src={url} type="video/mp4" />
 	</video>
 </figure>
