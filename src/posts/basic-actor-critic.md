@@ -76,21 +76,22 @@ Some notes on the above:
 
 ## Creating Deep Neural Networks
 
-I'm not going to go into great depth on this since there are plenty of other resources, but you can see how I initialized my neural networks for this algorithm here: [link](https://github.com/gabe00122/tutorial_actor_critic/blob/main/tutorial_actor_critic/mlp.py)  
-Also see the flax docs on how to initialize networks in jax: [link](https://flax.readthedocs.io/en/latest/quick_start.html#define-network)
+I won't go into great depth on this topic since there are plenty of other resources available. However you can see how I initialized my neural networks for this algorithm [here](https://github.com/gabe00122/tutorial_actor_critic/blob/main/tutorial_actor_critic/mlp.py)
+
+For more information on initializing networks in JAX, refer to the [Flax documentation](https://flax.readthedocs.io/en/latest/quick_start.html#define-network).
 
 ## Sample an action
 
 $\pi (\sdot|S,\boldsymbol{\theta})$
 
-We need a way to get select actions from our policy, the solution to this depends on what type of actions are required, for example continuous or discrete.
-For this tutorial we assume our action will always be one from a set of discrete actions, i.e A, B, C, or D
-A common way to handle this is to interpret the outputs of the actor model as [logits](https://en.wikipedia.org/wiki/Logit) for each of the possible actions. Lucky numpy (and therefor jax) has a built in function for picking a random action from a set of logits.
+We need a way to select actions from our policy. The solution to this depends on the type of actions are required, for example, continuous or discrete.
+For this tutorial, we assume our action will always be one from a set of discrete actions, i.e., A, B, C, or D.
+
+A common way to handle this is to interpret the outputs of the actor model as [logits](https://en.wikipedia.org/wiki/Logit) for each of the possible actions.
+Luckily, NumPy (and therefor JAX) has a built-in function for picking a random action from a set of logits.
 
 ```python
-def sample_action(
-    actor_model, training_state: TrainingState, obs: ArrayLike, rng_key: ArrayLike
-):
+def sample_action(actor_model, training_state, obs, rng_key):
     logits = self.actor_model.apply(training_state.actor_params, obs)
     return random.categorical(rng_key, logits)
 ```
@@ -101,9 +102,11 @@ def sample_action(
 
 $\delta \leftarrow R + \gamma \hat{\upsilon}(S', \bold{w}) - \hat{\upsilon}(S, \bold{w})$
 
-If our value function $\hat{\upsilon}(S, \bold{w})$ is an estimation of the total reward left to receive at observation S then. Then $\hat{\upsilon}(S, \bold{w}) - \hat{\upsilon}(S+n, \bold{w})$ should be an estimation of the reward received between S and S+n. If n is 1 meaning it's the next observation then this difference should be an estimation of the instantaneous reward at S. The difference between the estimated reward and the actual instantaneous reward is the temporal difference error $\delta$.
+If our value function $\hat{\upsilon}(S, \bold{w})$ is an estimate of the total reward left to receive at observation S, then $\hat{\upsilon}(S, \bold{w}) - \hat{\upsilon}(S+n, \bold{w})$ should be an estimate of the reward received between S and S+n.
+If n is 1, meaning it's the next observation, then this difference should be an estimate of the instantaneous reward at S.
+The difference between the estimated reward and the actual instantaneous reward is the temporal difference error $\delta$.
 
-If the observation is the episode terminal (done = True) than no further rewards are possible and so the state value should always be 0.0
+If the observation is the episode terminal (done = True), then no further rewards are possible, and so the state value should always be 0.0.
 
 This TD error will be used to update both our critic to make better estimates and our actor to take actions that lead to more rewards.
 
@@ -128,14 +131,15 @@ def temporal_difference_error(
 
 $\bold{w} \leftarrow \bold{w} + \alpha^\bold{w} \delta \nabla \hat\upsilon (S,\bold{w})$
 
-The temporal difference error can be used to improve the critic predictions by moving in the direction of the gradient at S times the td_error.
-Value(S+1) + reward is a better prediction than value(S) and our td error already represents this difference.
-If we simply move a step in the direction of the gradient of the value at S multiplied by the td error our value estimations will improve.
-We're also providing a way for our later state predictions to influence our earlier state predictions
-so that with enough repetitions the predictions at the end of the episode should help determine the predictions at the beginning of the episode.
+The temporal difference error can be used to improve the critic predictions by moving in the direction of the gradient at S, scaled by the TD error.
+Value(S+1) + reward is a better prediction then Value(S), and our TD error already represents this difference.
+If we simply move a step in the direction of the gradient of the value at S, multiplied by the TD error, our value estimations should improve.
 
-This is technically semi-gradient decent because the gradient at value(S+1) is ignored,
-a consequence of this is that the value function doesn't converge to the true reward approximation but a point close to it called td fixed point.
+We're also providing a way for our later state predictions to influence our earlier state predictions,
+so that with enough repetitions, the predictions at the end of the episode should help determine the predictions at the beginning of the episode.
+
+This is technically semi-gradient decent because the gradient at Value(S+1) is ignored.
+A consequence of this is that the value function doesn't converge to the true reward approximation but a point close to it called TD fixed point.
 
 ```python
 def update_params(params, grad, step_size):
@@ -162,36 +166,42 @@ def update_critic(
 
 $\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha^{\boldsymbol{\theta}}I\gamma\nabla \ln \pi(A|S,\boldsymbol{\theta})$
 
-We can also use the td error to select better actions. The basic idea is if the reward exceeds our expected reward for the state before the action was taken then we should increase the odds that that action is taken again in a similar state. If the reward is less than the expected reward we should decrease the odds that action is taken. Intuitively if you imagine that the value function is the average reward received for the actions selected by the current policy for that state then we are increasing the likelihood that better then average actions are taken and decreasing the likelihood that worse than average actions are taken. We use a log of the action probability in the gradient because if the action already has a high likelihood of being selected we want to adjust it less.
+We can also use the TD error to select better actions. The basic idea is if the reward exceeds our expected reward for the state before the action was taken, than we should increase the odds that that action is taken again in a similar state. Conversely, if the reward is less than the expected reward, we should decrease the odds that the action is taken.
+
+The intuition behind this is if you imagine that the value function is the average reward received for the actions selected by the current policy for that state, then we are increasing the likelihood that better-than-average actions are taken and decreasing the likelihood that worse-than-average actions are taken. We use the log of the action probability in the gradient because if the action already has a high likelihood of being selected, we want to adjust it less.
 
 ```python
-def action_log_probability(self, actor_params, obs: ArrayLike, action: ArrayLike):
-    logits = self.actor_model.apply(actor_params, obs)
+def action_log_probability(actor_model, actor_params, obs: ArrayLike, action: ArrayLike):
+    logits = actor_model.apply(actor_params, obs)
     return nn.log_softmax(logits)[action]
 
 # Update the actor
-def update_models(
-    self, training_state: TrainingState, params: ModelUpdateParams
+def update_actor(
+    actor_model, training_state: TrainingState, params: ModelUpdateParams
 ) -> tuple[TrainingState, Metrics]:
-    ...
-
-    actor_gradient = jax.grad(self.action_log_probability)(actor_params, obs, actions)
+    actor_gradient = jax.grad(self.action_log_probability, argnums=1)(actor_model, actor_params, obs, actions)
     actor_params = update_params(
         actor_params,
         actor_gradient,
         actor_learning_rate * importance * td_error,
     )
+
+    return actor_params
 ```
 
 ### Training loop
-Now we can bring it all together with a complete training loop with the gymnasium library (you can also use https://github.com/RobertTLange/gymnax for faster training speed) 
+Now we can bring it all together with a complete training loop with the gymnasium library (you can also use [Gymnax](https://github.com/RobertTLange/gymnax) for faster training speed) 
 
 Training loop with [gym](https://gymnasium.farama.org/)
 
 ```python
+@jax.jit
+def update_models():
+    pass
+
 for step in range(total_steps):
     rng_key, action_key = random.split(rng_key)
-    action = actor_critic.sample_action(training_state, obs, action_key)
+    action = sample_action(training_state, obs, action_key)
 
     next_obs, reward, terminated, truncated, _ = env.step(action.item())
     done = terminated or truncated
@@ -205,14 +215,14 @@ for step in range(total_steps):
         done=done,
     )
 
-    training_state, metrics = actor_critic.update_models(training_state, model_update_params)
+    training_state, metrics = update_models(training_state, model_update_params)
     obs = next_obs
 
     if done:
         obs, _ = env.reset()
 ```
 
-For a full example of the code see: https://github.com/gabe00122/tutorial_actor_critic/tree/main/tutorial_actor_critic/part1
+For a full example of the code, see: https://github.com/gabe00122/tutorial_actor_critic/tree/main/tutorial_actor_critic/part1
 
 # Results
 
@@ -233,20 +243,21 @@ discount=0.99
 
 <VideoPlayer
     url="/blog/actorcritic/cartpole-post-training.mp4"
-    description="A carpole policy after 2000 episodes training"
-    alt="A video of a carpole policy after 2000 episodes training"
+    description="A cart-pole policy after 800,000 steps training"
+    alt="A video of a cart-pole policy after 800,000 steps training"
 />
 
 
-# What next
+# Next Steps
 
-This is only basic implementation of an actor critic, while it works for environments like cart pole if you want to handle more complicated problems more techniques are usually employed.
-Here are just a few of many examples for possible improvements
+This is only a basic implementation of an actor-critic algorithm.
+While it works for environments like CartPole, more sophisticated techniques are usually employed to handle more complicated problems.
+Here are just a few examples of possible improvements:
 
-* Use a little bit of calculus to reframe the algorithms update as a loss function, then it's simpler to employ optimizers like Adam
-* Having more data in a training batch can help stabilize training and a common strategy to this end is using a replay buffer but vectorized environment training like in the a3c paper can also be used
-* Certain explicit regularization techniques may be helpful for RL such as entropy regularization or l2
-* More steps could be used to speed up training or a target network to stabilize training.
-* Importance sampling could be used to account for off policy data
+* ** Reframe the Update as a Loss Function **: Use calculus to reframe the algorithm's update as a loss function. This approach makes it simpler to employ optimizers like Adam and to use training batches both of which can often lead to faster convergence.
+* ** Train with batches ** Having more data in a training batch can help stabilize training and be more effectively computed, a common strategy to achieve this is using a replay buffer. Alternatively, vectorized environment training, can also be used or replay's can be used together with vectorized environments.
+* ** Explore Regularization Techniques ** Certain explicit regularization techniques, such as entropy regularization or L2 regularization, may be helpful for reinforcement learning. Regularization can influence both exploration and prevent plasticity loss in some cases.
+* ** Use More Steps ** The algorithm above only describes single step actor critics. Multiple steps are possible and can speed up training, but this comes at the cost of introducing more bias and making the TD fixed point farther from the true optima
+* ** Account for off-policy data ** the above algorithm with only work for on policy training data, this is a serious limitation since data not generated with the current policy shouldn't be used for training. Techniques such as importance sampling can help account for off policy data.
 
-Using an adam optimizer and vectorized training environments with some entropy regulation I used this algorithm to learn tic tac toe as can be seen in this [demo](/projects/tictactoe)
+Using an Adam optimizer and vectorized training environments with some entropy regularization, I used this algorithm to learn tic-tac-toe, as can be seen in this [demo](/projects/tictactoe)
