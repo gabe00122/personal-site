@@ -91,12 +91,33 @@ A common way to handle this is to interpret the outputs of the actor model as [l
 Luckily, NumPy (and therefor JAX) has a built-in function for picking a random action from a set of logits.
 
 ```python
+@partial(jax.jit, static_argnums=0)
 def sample_action(actor_model, training_state, obs, rng_key):
-    logits = self.actor_model.apply(training_state.actor_params, obs)
+    logits = actor_model.apply(training_state.actor_params, obs)
     return random.categorical(rng_key, logits)
 ```
 
 ## Update our parameters
+
+### Data Structures
+```python
+class TrainingState(NamedTuple):
+    importance: ArrayLike
+    actor_params: Any
+    critic_params: Any
+
+
+class UpdateArgs(NamedTuple):
+    discount: float
+    actor_learning_rate: float
+    critic_learning_rate: float
+
+    obs: ArrayLike
+    action: ArrayLike
+    reward: ArrayLike
+    next_obs: ArrayLike
+    done: ArrayLike
+```
 
 ### Calculating the TD error
 
@@ -111,18 +132,17 @@ If the observation is the episode terminal (done = True), then no further reward
 This TD error will be used to update both our critic to make better estimates and our actor to take actions that lead to more rewards.
 
 ```python
-def temporal_difference_error(
-    critic_model, critic_params, discount, observation, reward, next_observation, done
-) -> float:
-    state_value = critic_model.apply(critic_params, observation)
+def temporal_difference_error(critic_model, critic_params, update_args):
+    state_value = critic_model.apply(critic_params, update_args.obs)
     next_state_value = jax.lax.cond(
-        done,
+        update_args.done,
         lambda: 0.0,
-        lambda: discount * critic_model.apply(critic_params, next_observation)
+        lambda: update_args.discount
+        * critic_model.apply(critic_params, update_args.next_obs),
     )
 
     estimated_reward = state_value - next_state_value
-    td_error = rewards - estimated_reward
+    td_error = update_args.reward - estimated_reward
 
     return td_error
 ```
@@ -149,14 +169,12 @@ def update_params(params, grad, step_size):
     )
 
 
-def update_critic(
-    critic_model, critic_params, obs, critic_learning_rate, td_error
-):
-    critic_gradient = jax.grad(critic_model.apply)(critic_params, obs)
+def update_critic(critic_model, critic_params, update_args, td_error):
+    critic_gradient = jax.grad(critic_model.apply)(critic_params, update_args.obs)
     critic_params = update_params(
         critic_params,
         critic_gradient,
-        critic_learning_rate * td_error,
+        update_args.critic_learning_rate * td_error,
     )
 
     return critic_params
@@ -171,22 +189,51 @@ We can also use the TD error to select better actions. The basic idea is if the 
 The intuition behind this is if you imagine that the value function is the average reward received for the actions selected by the current policy for that state, then we are increasing the likelihood that better-than-average actions are taken and decreasing the likelihood that worse-than-average actions are taken. We use the log of the action probability in the gradient because if the action already has a high likelihood of being selected, we want to adjust it less.
 
 ```python
-def action_log_probability(actor_model, actor_params, obs: ArrayLike, action: ArrayLike):
+def action_log_probability(actor_model, actor_params, obs, action):
     logits = actor_model.apply(actor_params, obs)
     return nn.log_softmax(logits)[action]
 
-# Update the actor
-def update_actor(
-    actor_model, training_state: TrainingState, params: ModelUpdateParams
-) -> tuple[TrainingState, Metrics]:
-    actor_gradient = jax.grad(self.action_log_probability, argnums=1)(actor_model, actor_params, obs, actions)
+
+def update_actor(actor_model, actor_params, update_args, td_error, importance):
+    actor_gradient = jax.grad(action_log_probability, argnums=1)(
+        actor_model, actor_params, update_args.obs, update_args.action
+    )
     actor_params = update_params(
         actor_params,
         actor_gradient,
-        actor_learning_rate * importance * td_error,
+        update_args.actor_learning_rate * td_error * importance,
     )
 
     return actor_params
+```
+
+### Combined Update Function
+
+```python
+@partial(jax.jit, static_argnums=(0, 1))
+def update_models(
+    actor_model,
+    critic_model,
+    training_state: TrainingState,
+    update_args: UpdateArgs,
+) -> TrainingState:
+    actor_params = training_state.actor_params
+    critic_params = training_state.critic_params
+    importance = training_state.importance
+
+    td_error = temporal_difference_error(critic_model, critic_params, update_args)
+    critic_params = update_critic(critic_model, critic_params, update_args, td_error)
+    actor_params = update_actor(
+        actor_model, actor_params, update_args, td_error, importance
+    )
+
+    importance = jax.lax.cond(
+        update_args.done, lambda: 1.0, lambda: importance * update_args.discount
+    )
+
+    return TrainingState(
+        importance=importance, actor_params=actor_params, critic_params=critic_params
+    )
 ```
 
 ### Training loop
@@ -195,28 +242,29 @@ Now we can bring it all together with a complete training loop with the gymnasiu
 Training loop with [gym](https://gymnasium.farama.org/)
 
 ```python
-@jax.jit
-def update_models():
-    pass
-
+obs, _ = env.reset()
 for step in range(total_steps):
     rng_key, action_key = random.split(rng_key)
-    action = sample_action(training_state, obs, action_key)
+    action = actor_critic.sample_action(actor_model, training_state, obs, action_key)
 
     next_obs, reward, terminated, truncated, _ = env.step(action.item())
     done = terminated or truncated
 
-    model_update_params = ModelUpdateParams(
-        step=step,
+    update_args = actor_critic.UpdateArgs(
+        actor_learning_rate=actor_learning_rate(step),
+        critic_learning_rate=critic_learning_rate(step),
+        discount=discount,
         obs=obs,
-        actions=action,
-        rewards=reward,
+        action=action,
+        reward=reward,
         next_obs=next_obs,
         done=done,
     )
 
-    training_state, metrics = update_models(training_state, model_update_params)
+    training_state = actor_critic.update_models(actor_model, critic_model, training_state, update_args)
     obs = next_obs
+
+    total_reward += reward
 
     if done:
         obs, _ = env.reset()
@@ -232,6 +280,8 @@ total_steps = 800_000
 actor_learning_rate=linear_schedule(0.0001, 0.0, total_steps)
 critic_learning_rate=linear_schedule(0.0005, 0.0, total_steps)
 discount=0.99
+actor_features = (64, 64)
+critic_features = (64, 64)
 ```
 
 <Image
