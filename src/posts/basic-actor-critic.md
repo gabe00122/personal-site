@@ -61,7 +61,8 @@ I started with the pseudocode for a one-step actor critic from Sutton and Barto,
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$I \leftarrow \gamma I$  
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$S \leftarrow S'$
 
-TODO: Cite page number
+Algorithm outline taken from:
+Sutton, R. S., & Barto, A. G. (2018). Reinforcement Learning (2nd ed.). MIT Press.
 
 Some notes on the above:
 
@@ -79,25 +80,6 @@ Some notes on the above:
 I won't go into great depth on this topic since there are plenty of other resources available. However you can see how I initialized my neural networks for this algorithm [here](https://github.com/gabe00122/tutorial_actor_critic/blob/main/tutorial_actor_critic/mlp.py)
 
 For more information on initializing networks in JAX, refer to the [Flax documentation](https://flax.readthedocs.io/en/latest/quick_start.html#define-network).
-
-## Sample an action
-
-$\pi (\sdot|S,\boldsymbol{\theta})$
-
-We need a way to select actions from our policy. The solution to this depends on the type of actions are required, for example, continuous or discrete.
-For this tutorial, we assume our action will always be one from a set of discrete actions, i.e., A, B, C, or D.
-
-A common way to handle this is to interpret the outputs of the actor model as [logits](https://en.wikipedia.org/wiki/Logit) for each of the possible actions.
-Luckily, NumPy (and therefor JAX) has a built-in function for picking a random action from a set of logits.
-
-```python
-@partial(jax.jit, static_argnums=0)
-def sample_action(actor_model, training_state, obs, rng_key):
-    logits = actor_model.apply(training_state.actor_params, obs)
-    return random.categorical(rng_key, logits)
-```
-
-## Update our parameters
 
 ### Data Structures
 ```python
@@ -119,6 +101,24 @@ class UpdateArgs(NamedTuple):
     done: ArrayLike
 ```
 
+## Sample an action
+
+$\pi (\sdot|S,\boldsymbol{\theta})$
+
+We need a way to select actions from our policy. The solution to this depends on the type of actions are required, for example, continuous or discrete.
+For this tutorial, we assume our action will always be one from a set of discrete actions, i.e., A, B, C, or D.
+
+A common way to handle this is to interpret the outputs of the actor model as [logits](https://en.wikipedia.org/wiki/Logit) for each of the possible actions.
+Luckily, NumPy (and therefor JAX) has a built-in function for picking a random action from a set of logits.
+
+```python
+@partial(jax.jit, static_argnums=0)
+def sample_action(actor_model, training_state, obs, rng_key):
+    logits = actor_model.apply(training_state.actor_params, obs)
+    return random.categorical(rng_key, logits)
+```
+
+## Update our parameters
 ### Calculating the TD error
 
 $\delta \leftarrow R + \gamma \hat{\upsilon}(S', \bold{w}) - \hat{\upsilon}(S, \bold{w})$

@@ -4,19 +4,21 @@
 </script>
 
 <figure class="centered">
-	<figcaption class="centered-text">{description}</figcaption>
-	<video autoplay loop muted aria-describedby="" class="bordered">
+	<figcaption id="video-caption" class="centered-text">{description}</figcaption>
+	<video autoplay loop muted aria-describedby="video-caption" class="bordered">
 		<source src={url} type="video/mp4" />
 	</video>
 </figure>
 
 <style>
 	.centered {
-		display: block;
-		max-width: fit-content;
-		height: auto;
+		width: fit-content;
 		margin-left: auto;
 		margin-right: auto;
+	}
+
+	.centered video {
+		max-width: 100%;
 	}
 
 	.bordered {
