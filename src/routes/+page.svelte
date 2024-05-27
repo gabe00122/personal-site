@@ -17,7 +17,7 @@
 </p>
 
 <div>
-	Socials
+	Contact me on:
 	<div><a href="https://github.com/gabe00122">Github</a></div>
 	<div><a href="https://www.linkedin.com/in/gabriel-keith/">Linkedin</a></div>
 	<div><a href="mailto:contactme@gabrielkeith.dev">contactme@gabrielkeith.dev</a></div>

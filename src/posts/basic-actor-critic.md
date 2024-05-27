@@ -68,7 +68,7 @@ Some notes on the above:
 
 - Variables
   - $S$ is the observation from the environment or "state" this is the input both the actor and critic get about the environment during the current time step
-  - $\gamma$ is the discount, this is used to value rewards more farther in the future less the sooner rewards
+  - $\gamma$ is the discount, this is used to value rewards long term rewards less than immediate rewards.
   - $I$ stands for the importance, it starts about at 1.0 but diminish's with the discount over the course of the episode. We use it to scale the actor learning rate down the more the episode has progressed.
 - Functions
   - $\pi (\sdot|S,\boldsymbol{\theta})$ this is a function that samples a random action out of the action distribution
@@ -105,7 +105,7 @@ class UpdateArgs(NamedTuple):
 
 $\pi (\sdot|S,\boldsymbol{\theta})$
 
-We need a way to select actions from our policy. The solution to this depends on the type of actions are required, for example, continuous or discrete.
+We need a way to select actions from our policy. The solution to this depends on the type of actions required, for example, continuous or discrete.
 For this tutorial, we assume our action will always be one from a set of discrete actions, i.e., A, B, C, or D.
 
 A common way to handle this is to interpret the outputs of the actor model as [logits](https://en.wikipedia.org/wiki/Logit) for each of the possible actions.
