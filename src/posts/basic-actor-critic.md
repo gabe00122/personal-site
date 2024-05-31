@@ -82,6 +82,7 @@ I won't go into great depth on this topic since there are plenty of other resour
 For more information on initializing networks in JAX, refer to the [Flax documentation](https://flax.readthedocs.io/en/latest/quick_start.html#define-network).
 
 ### Data Structures
+
 ```python
 class TrainingState(NamedTuple):
     importance: ArrayLike
@@ -119,6 +120,7 @@ def sample_action(actor_model, training_state, obs, rng_key):
 ```
 
 ## Update our parameters
+
 ### Calculating the TD error
 
 $\delta \leftarrow R + \gamma \hat{\upsilon}(S', \bold{w}) - \hat{\upsilon}(S, \bold{w})$
@@ -239,7 +241,8 @@ def update_models(
 ```
 
 ### Training loop
-Now we can bring it all together with a complete training loop with the gymnasium library (you can also use [Gymnax](https://github.com/RobertTLange/gymnax) to run your environment on the gpu along with your training code) 
+
+Now we can bring it all together with a complete training loop with the gymnasium library (you can also use [Gymnax](https://github.com/RobertTLange/gymnax) to run your environment on the gpu along with your training code)
 
 Training loop with [gym](https://gymnasium.farama.org/)
 
@@ -277,6 +280,7 @@ For a full example of the code, see: https://github.com/gabe00122/tutorial_actor
 # Results
 
 Here are the hyper parameters I used for training on gym cart-pole, 500 is the max score.
+
 ```python
 total_steps = 800_000
 actor_learning_rate=linear_schedule(0.0001, 0.0, total_steps)
@@ -292,13 +296,11 @@ critic_features = (64, 64)
     alt-text="a graph showing the agents nearing the max score in cart pole after 2000 episodes"
 />
 
-
 <VideoPlayer
     url="/blog/actorcritic/cartpole-post-training.mp4"
     description="A cart-pole policy after 800,000 steps training"
     alt="A video of a cart-pole policy after 800,000 steps training"
 />
-
 
 # Next Steps
 
@@ -306,10 +308,10 @@ This is only a basic implementation of an actor-critic algorithm.
 While it works for environments like CartPole, more sophisticated techniques are usually employed to handle more complicated problems.
 Here are just a few examples of possible improvements:
 
-* ** Reframe the Update as a Loss Function **: Use calculus to reframe the algorithm's update as a loss function. This approach makes it simpler to employ optimizers like Adam and to use training batches.
-* ** Train with batches ** Having more data in a training batch can help stabilize training and more effectively use parallelism, a common strategy is using a replay buffer. Alternatively, vectorized environment training, can also be used but it's not uncommon to see both strategies employed together
-* ** Regularization Techniques ** Techniques such as entropy regularization or L2 regularization, may be helpful for reinforcement learning. Regularization can influence both exploration and sometimes prevent plasticity loss.
-* ** Use More Steps ** The algorithm in this post only describes single step actor critics. Multi-steps approaches are well studied and can speed up training, but this comes at the cost of introducing more bias and making the TD fixed point farther from the true optima.
-* ** Account for off-policy data ** This algorithm with only work for on policy training data, this is a serious limitation since data not generated with the current policy shouldn't be used for training. Techniques such as importance sampling can help account for off policy data.
+- ** Reframe the Update as a Loss Function **: Use calculus to reframe the algorithm's update as a loss function. This approach makes it simpler to employ optimizers like Adam and to use training batches.
+- ** Train with batches ** Having more data in a training batch can help stabilize training and more effectively use parallelism, a common strategy is using a replay buffer. Alternatively, vectorized environment training, can also be used but it's not uncommon to see both strategies employed together
+- ** Regularization Techniques ** Techniques such as entropy regularization or L2 regularization, may be helpful for reinforcement learning. Regularization can influence both exploration and sometimes prevent plasticity loss.
+- ** Use More Steps ** The algorithm in this post only describes single step actor critics. Multi-steps approaches are well studied and can speed up training, but this comes at the cost of introducing more bias and making the TD fixed point farther from the true optima.
+- ** Account for off-policy data ** This algorithm with only work for on policy training data, this is a serious limitation since data not generated with the current policy shouldn't be used for training. Techniques such as importance sampling can help account for off policy data.
 
 Using an Adam optimizer and vectorized training environments with some entropy regularization, I used this algorithm to learn tic-tac-toe, as can be seen in this [demo](/projects/tictactoe)

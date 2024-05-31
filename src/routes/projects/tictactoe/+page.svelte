@@ -155,6 +155,6 @@
 	}
 
 	.centered-text {
-		text-align: center;;
+		text-align: center;
 	}
 </style>
