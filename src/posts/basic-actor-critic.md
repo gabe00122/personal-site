@@ -1,7 +1,7 @@
 ---
 title: Basic Actor Critic
 description: Implement a actor critic from scratch in jax
-date: '2023-4-14'
+date: '2024-5-30'
 categories:
   - reinforcement learning
   - jax
@@ -18,17 +18,17 @@ published: true
 
 # Introduction
 
-I recently finished reading [Reinforcement Learning: An Introduction by Sutton and Barto](http://incompleteideas.net/book/the-book-2nd.html). Inspired by the book, I decided to implement the actor-critic algorithm and learned a lot in the process. My first step was translating the pseudocode outlined in the book into JAX. If you're new to reinforcement learning, it's better to start by implementing a solution to a multi-armed bandit problem and familiarize yourself with temporal difference learning.
+I recently finished reading [Reinforcement Learning: An Introduction by Sutton and Barto](http://incompleteideas.net/book/the-book-2nd.html). Inspired by the book, I decided to implement the actor-critic algorithm and learned a lot in the process. My first step was translating the pseudocode outlined in the book into JAX. If you're new to reinforcement learning, it's better to start by implementing a solution to a [multi-armed bandit problem](https://en.wikipedia.org/wiki/Multi-armed_bandit) and familiarize yourself with [temporal difference learning](https://en.wikipedia.org/wiki/Temporal_difference_learning) as these are foundational concepts.
 
 ## Reinforcement Learning
 
-Reinforcement learning is a class of algorithms designed to train a model, called a policy, to take actions that maximize the total reward received over time. It is called reinforcement learning because rewards reinforce behaviors that lead to higher rewards.
+Reinforcement learning is a class of algorithms designed to train a model, called a policy, to take actions that maximize the total reward received over time. It is called reinforcement learning because rewards reinforce behaviors that led to higher rewards.
 
 These algorithms require functional approximation, with deep learning being a particularly promising approach.
 
 ## Actor Critics
 
-Actor-critic algorithms are a class of reinforcement learning algorithms that use two models to teach each other: an actor and a critic. Both the actor and the critic take an observation of the environment as input but produce different outputs.
+Actor-critic's are a class of reinforcement learning algorithms that use two models to teach each other. Both the actor and the critic take an observation of the environment as input but produce different outputs.
 
 - The actor outputs an action distribution, from which an action can be sampled.
 - The critic outputs a prediction of the total reward remaining in the episode or a prediction of the future rate of reward.
@@ -41,7 +41,7 @@ In this way, the actor and critic engage in a balancing act, continually adjusti
 
 # Implementation
 
-I started with the pseudocode for a one-step actor critic from Sutton and Barto, I highly recommend reading this book yourself but I'll do my best translating the notation into a plain english explanation the best I can.
+I started with the pseudocode for a one-step actor critic from Sutton and Barto, I highly recommend reading this book yourself but I'll do my best translating the notation into a intuitive explanation.
 
 ## One-step Actor-Critic (episodic), for estimating $\pi_\theta\approx\pi_*$
 
@@ -67,9 +67,9 @@ Sutton, R. S., & Barto, A. G. (2018). Reinforcement Learning (2nd ed.). MIT Pres
 Some notes on the above:
 
 - Variables
-  - $S$ is the observation from the environment or "state" this is the input both the actor and critic get about the environment during the current time step
-  - $\gamma$ is the discount, this is used to value rewards long term rewards less than immediate rewards.
-  - $I$ stands for the importance, it starts about at 1.0 but diminish's with the discount over the course of the episode. We use it to scale the actor learning rate down the more the episode has progressed.
+  - $S$ is the observation from the environment or "state" this is the input for both the actor and critic about the environment during the current time step
+  - $\gamma$ is the discount, this is used to value long term rewards less than immediate rewards.
+  - $I$ stands for the importance, it starts at 1.0 but diminish's with the discount over the course of the episode. We use it to scale the actor learning rate down the more the episode has progressed.
 - Functions
   - $\pi (\sdot|S,\boldsymbol{\theta})$ this is a function that samples a random action out of the action distribution
   - $\pi(A|S,\boldsymbol{\theta})$ this gives of the likelihood a given action would be selected under the current policy
@@ -105,8 +105,8 @@ class UpdateArgs(NamedTuple):
 
 $\pi (\sdot|S,\boldsymbol{\theta})$
 
-We need a way to select actions from our policy. The solution to this depends on the type of actions required, for example, continuous or discrete.
-For this tutorial, we assume our action will always be one from a set of discrete actions, i.e., A, B, C, or D.
+We need a way to select actions from our policy. The solution to this depends if the actions for the environment are continuos or discrete.
+For this tutorial, we assume our action will always be one from a set of discrete actions.
 
 A common way to handle this is to interpret the outputs of the actor model as [logits](https://en.wikipedia.org/wiki/Logit) for each of the possible actions.
 Luckily, NumPy (and therefor JAX) has a built-in function for picking a random action from a set of logits.
@@ -127,7 +127,7 @@ If our value function $\hat{\upsilon}(S, \bold{w})$ is an estimate of the total 
 If n is 1, meaning it's the next observation, then this difference should be an estimate of the instantaneous reward at S.
 The difference between the estimated reward and the actual instantaneous reward is the temporal difference error $\delta$.
 
-If the observation is the episode terminal (done = True), then no further rewards are possible, and so the state value should always be 0.0.
+If the observation is the episode terminal (done = True), then no further rewards are possible, and so the state value should always be 0.
 
 This TD error will be used to update both our critic to make better estimates and our actor to take actions that lead to more rewards.
 
@@ -155,7 +155,7 @@ The temporal difference error can be used to improve the critic predictions by m
 Value(S+1) + reward is a better prediction then Value(S), and our TD error already represents this difference.
 If we simply move a step in the direction of the gradient of the value at S, multiplied by the TD error, our value estimations should improve.
 
-We're also providing a way for our later state predictions to influence our earlier state predictions,
+This also providing a way for our later state predictions to influence our earlier state predictions,
 so that with enough repetitions, the predictions at the end of the episode should help determine the predictions at the beginning of the episode.
 
 This is technically semi-gradient decent because the gradient at Value(S+1) is ignored.
@@ -186,7 +186,9 @@ $\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha^{\boldsymbol{\theta
 
 We can also use the TD error to select better actions. The basic idea is if the reward exceeds our expected reward for the state before the action was taken, than we should increase the odds that that action is taken again in a similar state. Conversely, if the reward is less than the expected reward, we should decrease the odds that the action is taken.
 
-The intuition behind this is if you imagine that the value function is the average reward received for the actions selected by the current policy for that state, then we are increasing the likelihood that better-than-average actions are taken and decreasing the likelihood that worse-than-average actions are taken. We use the log of the action probability in the gradient because if the action already has a high likelihood of being selected, we want to adjust it less.
+The intuition behind this is if the value function is the average reward received for the actions selected by the current policy for that state, then we are increasing the likelihood that better-than-average actions are taken and decreasing the likelihood that worse-than-average actions are taken.
+
+We use the log of the action probability in the gradient because if the action already has a high likelihood of being selected, we want to adjust it less.
 
 ```python
 def action_log_probability(actor_model, actor_params, obs, action):
@@ -237,7 +239,7 @@ def update_models(
 ```
 
 ### Training loop
-Now we can bring it all together with a complete training loop with the gymnasium library (you can also use [Gymnax](https://github.com/RobertTLange/gymnax) for faster training speed) 
+Now we can bring it all together with a complete training loop with the gymnasium library (you can also use [Gymnax](https://github.com/RobertTLange/gymnax) to run your environment on the gpu along with your training code) 
 
 Training loop with [gym](https://gymnasium.farama.org/)
 
@@ -274,7 +276,7 @@ For a full example of the code, see: https://github.com/gabe00122/tutorial_actor
 
 # Results
 
-Here are the hyper parameters I used for training
+Here are the hyper parameters I used for training on gym cart-pole, 500 is the max score.
 ```python
 total_steps = 800_000
 actor_learning_rate=linear_schedule(0.0001, 0.0, total_steps)
@@ -304,10 +306,10 @@ This is only a basic implementation of an actor-critic algorithm.
 While it works for environments like CartPole, more sophisticated techniques are usually employed to handle more complicated problems.
 Here are just a few examples of possible improvements:
 
-* ** Reframe the Update as a Loss Function **: Use calculus to reframe the algorithm's update as a loss function. This approach makes it simpler to employ optimizers like Adam and to use training batches both of which can often lead to faster convergence.
-* ** Train with batches ** Having more data in a training batch can help stabilize training and be more effectively computed, a common strategy to achieve this is using a replay buffer. Alternatively, vectorized environment training, can also be used or replay's can be used together with vectorized environments.
-* ** Explore Regularization Techniques ** Certain explicit regularization techniques, such as entropy regularization or L2 regularization, may be helpful for reinforcement learning. Regularization can influence both exploration and prevent plasticity loss in some cases.
-* ** Use More Steps ** The algorithm above only describes single step actor critics. Multiple steps are possible and can speed up training, but this comes at the cost of introducing more bias and making the TD fixed point farther from the true optima
-* ** Account for off-policy data ** the above algorithm with only work for on policy training data, this is a serious limitation since data not generated with the current policy shouldn't be used for training. Techniques such as importance sampling can help account for off policy data.
+* ** Reframe the Update as a Loss Function **: Use calculus to reframe the algorithm's update as a loss function. This approach makes it simpler to employ optimizers like Adam and to use training batches.
+* ** Train with batches ** Having more data in a training batch can help stabilize training and more effectively use parallelism, a common strategy is using a replay buffer. Alternatively, vectorized environment training, can also be used but it's not uncommon to see both strategies employed together
+* ** Regularization Techniques ** Techniques such as entropy regularization or L2 regularization, may be helpful for reinforcement learning. Regularization can influence both exploration and sometimes prevent plasticity loss.
+* ** Use More Steps ** The algorithm in this post only describes single step actor critics. Multi-steps approaches are well studied and can speed up training, but this comes at the cost of introducing more bias and making the TD fixed point farther from the true optima.
+* ** Account for off-policy data ** This algorithm with only work for on policy training data, this is a serious limitation since data not generated with the current policy shouldn't be used for training. Techniques such as importance sampling can help account for off policy data.
 
 Using an Adam optimizer and vectorized training environments with some entropy regularization, I used this algorithm to learn tic-tac-toe, as can be seen in this [demo](/projects/tictactoe)
