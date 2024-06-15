@@ -69,7 +69,7 @@ Some notes on the above:
 - Variables
   - $S$ is the observation from the environment or "state" this is the input for both the actor and critic about the environment during the current time step
   - $\gamma$ is the discount, this is used to value long term rewards less than immediate rewards.
-  - $I$ stands for the importance, it starts at 1.0 but diminish's with the discount over the course of the episode. We use it to scale the actor learning rate down the more the episode has progressed.
+  - $I$ stands for the importance, it starts at 1.0 but diminishes with the discount over the course of the episode. We use it to scale the actor learning rate down the more the episode has progressed.
 - Functions
   - $\pi (\sdot|S,\boldsymbol{\theta})$ this is a function that samples a random action out of the action distribution
   - $\pi(A|S,\boldsymbol{\theta})$ this gives of the likelihood a given action would be selected under the current policy
@@ -160,7 +160,7 @@ If we simply move a step in the direction of the gradient of the value at S, mul
 This also providing a way for our later state predictions to influence our earlier state predictions,
 so that with enough repetitions, the predictions at the end of the episode should help determine the predictions at the beginning of the episode.
 
-This is technically semi-gradient decent because the gradient at Value(S+1) is ignored.
+This is technically semi-gradient descent because the gradient at Value(S+1) is ignored.
 A consequence of this is that the value function doesn't converge to the true reward approximation but a point close to it called TD fixed point.
 
 ```python
