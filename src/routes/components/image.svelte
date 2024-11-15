@@ -1,7 +1,11 @@
-<script>
-	export let url = '';
-	export let description = '';
-	export let altText = '';
+<script lang="ts">
+	interface Props {
+		url?: string;
+		description?: string;
+		altText?: string;
+	}
+
+	let { url = '', description = '', altText = '' }: Props = $props();
 </script>
 
 <figure>

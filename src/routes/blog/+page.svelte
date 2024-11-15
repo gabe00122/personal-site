@@ -2,7 +2,7 @@
 	import * as config from '$lib/config';
 	import { formatDate } from '$lib/utils.js';
 
-	export let data;
+	let { data } = $props();
 </script>
 
 <!-- Posts -->

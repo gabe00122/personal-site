@@ -10,7 +10,7 @@
 		<ul>
 			<li><strong>Gabriel Keith</strong></li>
 			<li>
-				<button on:click={toggleTheme} class="outline contrast" style="border: none;">
+				<button onclick={toggleTheme} class="outline contrast" style="border: none;">
 					{#if $theme === 'dark'}
 						<Sun />
 					{:else}

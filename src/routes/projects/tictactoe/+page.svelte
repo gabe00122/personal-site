@@ -54,19 +54,19 @@
 	let model: tf.GraphModel<string>;
 	let modelWrapper: ModelWrapper;
 
-	let loading = true;
-	let gameStart = true;
-	let showPreferences = false;
-	let aiHasMoved = false;
+	let loading = $state(true);
+	let gameStart = $state(true);
+	let showPreferences = $state(false);
+	let aiHasMoved = $state(false);
 
-	let playerWentFirst = true;
+	let playerWentFirst = $state(true);
 	let aiCalculating = false;
 
-	let value = 0.0;
+	let value = $state(0.0);
 
-	let preferences = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-	let previousGame = initialGameState;
-	let game = initialGameState;
+	let preferences = $state([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+	let previousGame = $state(initialGameState);
+	let game = $state(initialGameState);
 
 	onMount(async () => {
 		if (!model) {
@@ -90,8 +90,8 @@
 
 {#if gameStart}
 	<div class="control-group">
-		<button on:click={playAsX}>I want to go first</button>
-		<button on:click={playAsO}>I want to go second</button>
+		<button onclick={playAsX}>I want to go first</button>
+		<button onclick={playAsO}>I want to go second</button>
 	</div>
 {:else if loading}
 	<div class="control-group">Loading Model...</div>
@@ -118,7 +118,7 @@
 			{/if}
 		</div>
 		<div class="control-group" style="margin-bottom: 20px;">
-			<button on:click={restart}>Play Again?</button>
+			<button onclick={restart}>Play Again?</button>
 		</div>
 	{/if}
 

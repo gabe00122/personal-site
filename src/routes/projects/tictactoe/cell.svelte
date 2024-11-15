@@ -8,11 +8,15 @@
 		dispatch('click');
 	}
 
-	export let preference: number | undefined = undefined;
-	export let cell: Cell;
+	interface Props {
+		preference?: number | undefined;
+		cell: Cell;
+	}
+
+	let { preference = undefined, cell }: Props = $props();
 </script>
 
-<div class="cell" on:click={onClick} class:selectable={cell === undefined}>
+<div class="cell" onclick={onClick} class:selectable={cell === undefined}>
 	<div class="preference">
 		{#if preference !== undefined}
 			{preference.toLocaleString(undefined, { style: 'percent' })}
