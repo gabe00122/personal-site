@@ -130,6 +130,7 @@
 		</label>
 	</div>
 	<div class="centered-text">
+		This model was train with self play in less than a minute on a RTX 3070<br >
 		See training code on <a href="https://github.com/gabe00122/tictactoe-rl">github</a>
 	</div>
 {/if}
