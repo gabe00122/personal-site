@@ -19,6 +19,7 @@
 		width: fit-content;
 		margin-left: auto;
 		margin-right: auto;
+		margin-bottom: 1rem;
 	}
 
 	.centered video {

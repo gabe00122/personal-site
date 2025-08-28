@@ -1,72 +1,163 @@
 ---
-title: Online transformer RL
-description: Training a transformer with PPO to solve POMDP's
-date: '2025-7-26'
+title: Online Transformer RL
+description: Training a transformer with PPO to solve POMDPs
+date: '2025-07-26'
 categories:
   - reinforcement learning
   - jax
   - flax
   - transformer
   - deep learning
-published: false
+published: true
 ---
 
-The goal for this project was to see if a simple RL policy gradient could reliably train a transformer from scratch to solve environments to require good context utilization. Solving environments with long context or variable length context was out of scope although I have some thoughts on how those could be handled too.
+<script>
+  import VideoPlayer from "../routes/components/video.svelte";
+  import Image from "../routes/components/image.svelte";
+</script>
 
-These results show that transformers can be trained to utilize context in a reasonable amount of time on consumer hardware with on policy reinforcement learning.
+The goal of this project was to see if a simple RL policy gradient method could train a transformer from scratch to solve partially observable markov decision processes.  
+I focused on environments that require good use of context, but **not** very long context so I could fit the entire episode in the back propagation over time. Because of this constraint grid based problems seemed like a good fit because a lot can unfold in the environment in relatively few time-steps.
+
+The results show that transformers can be trained to use context effectively in a reasonable amount of time on consumer hardware with on-policy reinforcement learning.
+
+---
 
 ## Approach
-The core idea behind this implementation is to treat each trajectory as the atomic unit of learning. Because the context influences the action selection training with only part of a trajectory would be off policy.
 
-Actions are inferenced in parallel over multiple agents for computational efficiency and and stability.
+The key idea is to treat **each trajectory** as the atomic unit of learning.  
+I treat each time step as one "token" in the transformer and I consider the last **last action** taken and **last reward** received to be part of the observation (shouldn't the agents always be able to remember what action they took?)  
 
-When an entire trajectory is collected for each agent a update step is preformed.
+Because the entire context influences action selection, training on only part of a trajectory would make the data off-policy unless.
+A rollout is collected over multiple parallel agents, using a KV cache to speed up inference.
 
-Each update step consists of multiple epochs over the rollout data.
-For each update the rollout is shuffled and split into mini-batches.
-Each mini batch is based back through the network using a causal mask and for a single gradient step.
+When the rollout is filled
+* The advantage and target values are calculated using **TD(lambda)**. 
+* The trajectories are shuffled over the batch dimension but not the timestep dimension.  
+* The trajectories are split into multiple mini-batches over the batch dimension.  
 
-After the rollout is collected the advantage is calculated using Generalized Advantage Estimators
-For each epoch over the rollout this batch of trajectories is shuffled and split into multiple mini-batches.
-Each minibatch uses a standard PPO loss function.
+The mini-batch update uses a standard PPO loss function and the adamw or muon optimizer to make a gradient step.
 
-
+---
 
 ## Architecture
 
-The shape of the input observations is [agent, sequence, ...dims]
-* Agents this is [environment, agent] flattened where environment is a copy of the environment and agent is one of multiple possible agents in each environment.
-* sequence is the length of the trajectory to pass to the model, for inference where a KV cache is used this should be size 1. For back propagation after a rollout is collected this should be the size of the full trajectory.
-* dims is environment specific observation dimensions
+<Image
+    url="/blog/transformer/transformer.png"
+    description="Transformer architecture"
+    alt-text="A diagram depicting the transformer architecture, with three encoders at the top, a standard body, and a policy and value head"
+    align="center"
+/>
 
-As well as observation, the last action and reward are passed to the model (these can be considered part of the observation)
+### Embeddings
+The model uses three embeddings:
+- **Last action** — similar to a tied-weight embedding in an LLM, also reused as the actor head
+- **Last reward** — a simple linear projection
+- **Observation** — environment-specific but for grid worlds simply one hotting each tile, flattening and using a single linear projection works well
+
+These embeddings are summed and passed into a stack of transformer layers.
+
+### Transformer Layers
+- Pre-norm
+- RoPE positional embeddings
+- Grouped-query attention
+- Optional sliding-window attention
+
+### Outputs
+- **Actor head** — Discrete policy logits
+- **Value function** — includes an extra hidden layer + activation (slightly better than a direct linear projection), if a histogram loss is used then the outputs are value logits
 
 
-This model uses three embedding layers:
-* Last action
-  * This is similar to a tied weight embedding for a LLM and is also used as the actor head
-* Last reward
-  * This is a simple linear projection of last reward
-* Observation
-  * Environment specific, for grid environments this is a simple cnn
+I've been testing with 6 transformer layers, a hidden size of 128 and a feed forward size of 768 with a context size of 512.
+The total parameter count comes out to around 2.3 million parameters.  
 
-All three embeddings are simply added together and feed into the next layers.
+While I used histogram loss for the value for most of my training there are sometimes catastrophic failure modes if the discretization of the value function doesn't represent the target value well.  
 
-This model uses multiple transformer layers, each transformer layer uses a attention block and a feed forward block
-The transformer layers use pre-norm, rope positional embeddings and grouped query attention with optional sliding window attention.
-
-The model then uses the output from the transformer layers for the action head (the transposed action embedding) and a value function. I found that preformace is slightly better of the value function uses an additional hidden layer and activation as opposed to being just a linear transformer.
-
+---
 
 ## Performance
-A small transformer (2m parameters) can train at 2 million environment steps per second on a single RTX 5090
 
-## Limitations
-The obvious limitation of this approach is it won't work for continuous RL, the context size will always be finite and requiring to make a update on the entire context will lower the frequency of model updates as the trajectories get larger.
+One thing I wondered about was if you could get the number of samples needed to train with PPO using a transformer based model on consumer hardware and I found that it can fairly fast with a small context size!
 
+I'm training on a single 5090 at **2.2 million steps** per second!
+If you only use a single transformer layer this is closer to **10 million steps** per second but as I'll get to later, the model isn't very effective with only one layer.
+
+Here are a few things that were important to performance
+
+* Both the environments and training code where written in a single end-to-end jitted JAX training loop.
+* Using the cudnn backend on nvidia GPU's via [Dot Product Attention](https://docs.jax.dev/en/latest/_autosummary/jax.nn.dot_product_attention.html)
+* bfloat16 with float32 accumulation speeds up training and didn't noticeably hurt performance.
+* Using grouped query attention with one kv head and four query heads significantly speeds up training and has a small negative impact on performance.
+* Batched inference has a large impact on performance, using 4092 vectorized agents insured that rollout creation had high algorithmic intensity.
+
+---
 
 ## Results
 
-A single way to test memory/context is to learn a 2d grid environment. A new grid is generated each episode and agents need to find a random location within this grid. When they get to that location they receive a reward and are moved to another random location. They only way to achieve more rewards is to explore effectively and remember your way back based on features in the random grid.
 
-Observations are given as a small grid view of one hot tile types, a small cnn is used to encode the observations.
+To test memory and context usage, I used a simple 2D grid environment:
+- A new grid is generated each episode using multiple octaves of perlin noise.
+- The agent must find a random target location.
+- Upon reaching the target, the agent gets a reward and is moved to another random location.
+- Maximizing rewards requires **exploring effectively** and **remembering** the route back using features of the grid.
+
+Observations are given as a small grid view tile types, one hotted, flattened and encoded with a dense layer before being passed to the transformer.
+
+
+Overall the agents do a great job figuring out where they are and returning to a previous location quickly, but more compute reliably leads to better agents at this problem and I'm sure I have not reached peak performance yet.
+
+Agents in yellow, walls in red and goal in blue. The highlighted range is the observation size.
+
+<VideoPlayer
+  url="/blog/transformer/return.mp4"
+  description="Grid memory game after 10 billion steps training."
+  alt="Shows multiple agents discovering a goal location and returning to it faster the next time."
+/>
+
+For some reason the agents always form groups in this environment even though there is no obvious incentive to.
+
+---
+
+## RNNs
+
+I found that if you substitute self attention layers with gru layers and do full back prop through time it does well but trains at only 1/4th the speed of the transformer.
+A MLP fails to progress beyond a basic level of reward.
+<Image
+  url="/blog/transformer/arch.png"
+  description="Comparison of Attention, Gru layers and a mlp"
+  alt=""
+  align="center"
+/>
+
+---
+
+## Scaling
+
+The transformer on the grid memory environment seems to have predictable parameter scaling. I found that as you increase the number of layers, sample efficiency predictable improves. Even though smaller networks require less compute the optimal parameter count rises as the compute budget rises.
+
+<Image
+  url="/blog/transformer/scaling.png"
+  description="Comparison of 2 layers, 4 layers and 6 layers"
+  alt=""
+  align="center"
+/>
+
+---
+
+## Craftax
+
+I wanted to test the trainer on a existing environment so I could compare to other implementations, with minimal hyper parameter tuning compared to the custom environment hypers I achieved a score of 39 average reward in crafter.
+
+<VideoPlayer
+  url="/blog/transformer/craftax.mp4"
+  description=""
+  alt=""
+/>
+
+Despite doing reasonably well at getting some of the easier achievements the model still did a poor job with basic survival actions such as eating and drinking water.
+
+## Next Steps
+
+* I could potentially train with a rollout that does not contain an entire episode and stay on policy, this would require sliding window attention and to retain the KV cache used at the beginning of the rollout.
+* Multi-environment learning: I want to see if training spatial reasoning in a grid can transfer to other partially observable grid environments by training a single model on multiple environments.
+* Exploring linear attention or state space models, these might combine some of the performance benefits of transformers and RNNs.
