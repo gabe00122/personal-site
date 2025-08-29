@@ -16,10 +16,12 @@ published: true
   import Image from "../routes/components/image.svelte";
 </script>
 
-The goal of this project was to see if a simple RL policy gradient method could train a transformer from scratch to solve partially observable markov decision processes.  
+The goal of this project was to see if a simple RL policy gradient method could train a transformer from scratch to solve partially observable markov decision processes. While there have been a few works exploring the use of transformers in RL, in fully online settings RNNs remain more common.  
 I focused on environments that require good use of context, but **not** very long context so I could fit the entire episode in the back propagation over time. Because of this constraint grid based problems seemed like a good fit because a lot can unfold in the environment in relatively few time-steps.
 
 The results show that transformers can be trained to use context effectively in a reasonable amount of time on consumer hardware with on-policy reinforcement learning.
+
+The model and algorithm are implemented here: https://github.com/gabe00122/jaxrl
 
 ---
 
@@ -28,11 +30,12 @@ The results show that transformers can be trained to use context effectively in 
 The key idea is to treat **each trajectory** as the atomic unit of learning.  
 I treat each time step as one "token" in the transformer and I consider the last **last action** taken and **last reward** received to be part of the observation (shouldn't the agents always be able to remember what action they took?)  
 
-Because the entire context influences action selection, training on only part of a trajectory would make the data off-policy unless.
-A rollout is collected over multiple parallel agents, using a KV cache to speed up inference.
+A rollout is collected over multiple parallel agents, using a **KV cache** to speed up inference.
+
+Because the entire context influences action selection, training on only part of a trajectory would make the data off-policy. Someone could get around this using sliding window attention and recording the **KV cache** at the beginning of the rollout.  
 
 When the rollout is filled
-* The advantage and target values are calculated using **TD(lambda)**. 
+* The advantage and target values are calculated using **TD(λ)**. 
 * The trajectories are shuffled over the batch dimension but not the timestep dimension.  
 * The trajectories are split into multiple mini-batches over the batch dimension.  
 
@@ -51,7 +54,7 @@ The mini-batch update uses a standard PPO loss function and the adamw or muon op
 
 ### Embeddings
 The model uses three embeddings:
-- **Last action** — similar to a tied-weight embedding in an LLM, also reused as the actor head
+- **Last action** — similar to a tied-weight embedding in an LLM, also reused as the **actor head**
 - **Last reward** — a simple linear projection
 - **Observation** — environment-specific but for grid worlds simply one hotting each tile, flattening and using a single linear projection works well
 
@@ -84,11 +87,11 @@ If you only use a single transformer layer this is closer to **10 million steps*
 
 Here are a few things that were important to performance
 
-* Both the environments and training code where written in a single end-to-end jitted JAX training loop.
+* Both the environments and training code were written in a single end-to-end jitted JAX training loop.
 * Using the cudnn backend on nvidia GPU's via [Dot Product Attention](https://docs.jax.dev/en/latest/_autosummary/jax.nn.dot_product_attention.html)
 * bfloat16 with float32 accumulation speeds up training and didn't noticeably hurt performance.
 * Using grouped query attention with one kv head and four query heads significantly speeds up training and has a small negative impact on performance.
-* Batched inference has a large impact on performance, using 4092 vectorized agents insured that rollout creation had high algorithmic intensity.
+* Batched inference has a large impact on performance, using 4092 vectorized agents ensured that rollout creation had high algorithmic intensity.
 
 ---
 
@@ -120,7 +123,8 @@ For some reason the agents always form groups in this environment even though th
 
 ## RNNs
 
-I found that if you substitute self attention layers with gru layers and do full back prop through time it does well but trains at only 1/4th the speed of the transformer.
+I found that if you substitute self attention layers with gru layers and do full back prop through time the model is respectable but only around 1/4th the training speed of a similarly sized transformer with a BPTT length of 512.  
+Even for RL the lack of parallelism can make training RNNs significantly slower than transformers.  
 A MLP fails to progress beyond a basic level of reward.
 <Image
   url="/blog/transformer/arch.png"
@@ -146,7 +150,7 @@ The transformer on the grid memory environment seems to have predictable paramet
 
 ## Craftax
 
-I wanted to test the trainer on a existing environment so I could compare to other implementations, with minimal hyper parameter tuning compared to the custom environment hypers I achieved a score of 39 average reward in crafter.
+I wanted to test the trainer on a existing environment so I could compare to other implementations, with minimal hyper parameter tuning compared to the custom environment hypers I achieved an average reward of 39 in Craftax.
 
 <VideoPlayer
   url="/blog/transformer/craftax.mp4"
@@ -158,6 +162,6 @@ Despite doing reasonably well at getting some of the easier achievements the mod
 
 ## Next Steps
 
-* I could potentially train with a rollout that does not contain an entire episode and stay on policy, this would require sliding window attention and to retain the KV cache used at the beginning of the rollout.
+* I could potentially train with a rollout that does not contain an entire episode and stay on policy, this would require sliding window attention and to retain the **KV cache** used at the beginning of the rollout.
 * Multi-environment learning: I want to see if training spatial reasoning in a grid can transfer to other partially observable grid environments by training a single model on multiple environments.
 * Exploring linear attention or state space models, these might combine some of the performance benefits of transformers and RNNs.
