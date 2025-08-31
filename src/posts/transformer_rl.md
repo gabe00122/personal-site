@@ -1,7 +1,7 @@
 ---
 title: Online Transformer RL
 description: Training a transformer with PPO to solve POMDPs
-date: '2025-07-26'
+date: '2025-08-31'
 categories:
   - reinforcement learning
   - jax
@@ -16,7 +16,7 @@ published: true
   import Image from "../routes/components/image.svelte";
 </script>
 
-The goal of this project was to see if a simple RL policy gradient method could train a transformer from scratch to solve partially observable markov decision processes. While there have been a few works exploring the use of transformers in RL, in fully online settings RNNs remain more common.  
+The goal of this project was to see if a simple actor critic could train a transformer from scratch to solve partially observable markov decision processes. While there have been a few works exploring the use of transformers in RL, in fully online settings RNNs remain more common.  
 I focused on environments that require good use of context, but **not** very long context so I could fit the entire episode in the back propagation over time. Because of this constraint grid based problems seemed like a good fit because a lot can unfold in the environment in relatively few time-steps.
 
 The results show that transformers can be trained to use context effectively in a reasonable amount of time on consumer hardware with on-policy reinforcement learning.
@@ -27,7 +27,7 @@ The model and algorithm are implemented here: https://github.com/gabe00122/jaxrl
 
 ## Approach
 
-The key idea is to treat **each trajectory** as the atomic unit of learning.  
+A key idea is to train on entire trajectories in a single update step, so the update can stay on-policy without worrying about initial carry state.
 I treat each time step as one "token" in the transformer and I consider the last **last action** taken and **last reward** received to be part of the observation (shouldn't the agents always be able to remember what action they took?)  
 
 A rollout is collected over multiple parallel agents, using a **KV cache** to speed up inference.
@@ -61,8 +61,8 @@ The model uses three embeddings:
 These embeddings are summed and passed into a stack of transformer layers.
 
 ### Transformer Layers
-- Pre-norm
-- RoPE positional embeddings
+- Pre-layer norm
+- RoPE
 - Grouped-query attention
 - Optional sliding-window attention
 
@@ -75,6 +75,8 @@ I've been testing with 6 transformer layers, a hidden size of 128 and a feed for
 The total parameter count comes out to around 2.3 million parameters.  
 
 While I used histogram loss for the value for most of my training there are sometimes catastrophic failure modes if the discretization of the value function doesn't represent the target value well.  
+
+I haven't deeply evaluated histogram targets with MSE value targets but I think it could have advantages in terms of stability.  
 
 ---
 
@@ -116,6 +118,11 @@ Agents in yellow, walls in red and goal in blue. The highlighted range is the ob
   description="Grid memory game after 10 billion steps training."
   alt="Shows multiple agents discovering a goal location and returning to it faster the next time."
 />
+<VideoPlayer
+  url="/blog/transformer/larger.mp4"
+  description="Larger map with a added ability to slowly dig walls."
+  alt="Shows multiple agents discovering a goal location and returning to it faster the next time with a larger map and digging through walls."
+/>
 
 For some reason the agents always form groups in this environment even though there is no obvious incentive to.
 
@@ -129,7 +136,7 @@ A MLP fails to progress beyond a basic level of reward.
 <Image
   url="/blog/transformer/arch.png"
   description="Comparison of Attention, Gru layers and a mlp"
-  alt=""
+  alt="A graph showing mlp at 1.5 reward, gru at 9 and attention at 10"
   align="center"
 />
 
@@ -141,8 +148,8 @@ The transformer on the grid memory environment seems to have predictable paramet
 
 <Image
   url="/blog/transformer/scaling.png"
-  description="Comparison of 2 layers, 4 layers and 6 layers"
-  alt=""
+  description="Comparison of 2 layers, 4 layers, 8 and 16 layers"
+  alt="Graph showing 2 layers just under 8 reward, 4 layers at 9, 8 layers at 10.1 and 16 and 10.5"
   align="center"
 />
 
@@ -154,8 +161,8 @@ I wanted to test the trainer on a existing environment so I could compare to oth
 
 <VideoPlayer
   url="/blog/transformer/craftax.mp4"
-  description=""
-  alt=""
+  description="Craftax after about 2 billion training steps"
+  alt="A video showing a 2d minecraft like game "
 />
 
 Despite doing reasonably well at getting some of the easier achievements the model still did a poor job with basic survival actions such as eating and drinking water.
