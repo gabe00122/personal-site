@@ -5,7 +5,6 @@
 	let { data } = $props();
 </script>
 
-<!-- Posts -->
 <section>
 	<ul class="posts">
 		{#each data.posts as post}

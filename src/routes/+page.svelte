@@ -6,13 +6,9 @@
 	/>
 </svelte:head>
 
-<p>
-Self taught machine learning and RL enthusiast with a software engineering background.
-</p>
+<p>Software engeneer and independent researcher</p>
 
-<p>
-This is a site to share my projects and thoughts on AI!
-</p>
+<p>This is a site to share my projects and thoughts on AI!</p>
 
 <div>
 	Contact me on:
