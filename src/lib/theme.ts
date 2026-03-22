@@ -18,8 +18,3 @@ export function toggleTheme() {
 		return newTheme;
 	});
 }
-
-// set the theme
-export function setTheme(newTheme: Theme) {
-	theme.set(newTheme);
-}

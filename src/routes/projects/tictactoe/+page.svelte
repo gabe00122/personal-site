@@ -68,15 +68,21 @@
 	let previousGame = $state(initialGameState);
 	let game = $state(initialGameState);
 
-	onMount(async () => {
-		if (!model) {
-			model = await tf.loadGraphModel('/tictactoe/selfplay/model.json');
-			modelWrapper = new ModelWrapper(model);
+	onMount(() => {
+		(async () => {
+			if (!model) {
+				model = await tf.loadGraphModel('/tictactoe/selfplay/model.json');
+				modelWrapper = new ModelWrapper(model);
 
-			// Warm up the model
-			await modelWrapper.act(game);
-			loading = false;
-		}
+				// Warm up the model
+				await modelWrapper.act(game);
+				loading = false;
+			}
+		})();
+
+		return () => {
+			modelWrapper?.dispose();
+		};
 	});
 </script>
 
@@ -130,7 +136,7 @@
 		</label>
 	</div>
 	<div class="centered-text">
-		This model was train with self play in less than a minute on a RTX 3070<br >
+		This model was trained with self play in less than a minute on a RTX 3070<br />
 		See training code on <a href="https://github.com/gabe00122/tictactoe-rl">github</a>
 	</div>
 {/if}

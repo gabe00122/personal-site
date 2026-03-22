@@ -28,6 +28,8 @@ export class ModelWrapper {
 		const jsPreferences = [...(await preferences.data())];
 		const jsValue = (await value.data())[0];
 
+		tf.dispose([obs, mask, value, logits, preferences]);
+
 		const action = ModelWrapper.#samplePreference(jsPreferences);
 
 		return {
@@ -35,6 +37,10 @@ export class ModelWrapper {
 			preferences: jsPreferences,
 			value: jsValue
 		};
+	}
+
+	dispose() {
+		this.#model.dispose();
 	}
 
 	static #samplePreference(preferences: number[]): number {

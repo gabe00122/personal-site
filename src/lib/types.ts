@@ -1,4 +1,4 @@
-export type Categories = 'sveltekit' | 'svelte';
+export type Categories = 'reinforcement learning' | 'jax' | 'transformer';
 
 export type Post = {
 	title: string;
