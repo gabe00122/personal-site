@@ -10,7 +10,7 @@
 	<meta property="og:title" content={data.meta.title} />
 </svelte:head>
 
-<div class="container">
+<div class="container post-card">
 	<article>
 		<hgroup>
 			<h1>{data.meta.title}</h1>
@@ -30,4 +30,7 @@
 </div>
 
 <style>
+	.post-card {
+		margin-top: 1rem;
+	}
 </style>

@@ -1,5 +1,5 @@
 ---
-title: Basic Actor Critic
+title: Vanilla Actor Critic
 description: Implement a actor critic from scratch in jax
 date: '2024-5-30'
 categories:

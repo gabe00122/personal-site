@@ -1,4 +1,24 @@
+[data-theme='light'],
+:root:not([data-theme='dark']) {
+	--pico-header-border-color: transparent;
+	--pico-header-background: rgba(255, 255, 255, 0.8);
+}
+
+@media only screen and (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--pico-header-background: rgba(19, 22.5, 30.5, 0.9);
+		--pico-header-border-color: rgba(32, 38, 50, 0.9);
+	}
+}
+
+/* Dark color scheme (Forced) */
+/* Enabled if forced with data-theme="dark" */
+[data-theme='dark'] {
+	--pico-header-background: rgba(19, 22.5, 30.5, 0.9);
+	--pico-header-border-color: rgba(32, 38, 50, 0.9);
+}
+
 .centered-card {
 	max-width: 40rem;
-	margin: var(--pico-block-spacing-vertical) auto;
+	margin: 1rem auto var(--pico-block-spacing-vertical) auto;
 }

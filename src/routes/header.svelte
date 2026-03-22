@@ -3,9 +3,20 @@
 	import Moon from 'lucide-svelte/icons/moon';
 
 	import { theme, toggleTheme } from '$lib/theme';
+	import { onMount } from 'svelte';
+
+	let scrolled = $state(false);
+
+	onMount(() => {
+		const onScroll = () => {
+			scrolled = window.scrollY > 0;
+		};
+		window.addEventListener('scroll', onScroll, { passive: true });
+		return () => window.removeEventListener('scroll', onScroll);
+	});
 </script>
 
-<header>
+<header class:scrolled>
 	<div class="container">
 		<nav aria-label="Main" lang="en">
 			<!-- <ul>
@@ -31,6 +42,22 @@
 </header>
 
 <style>
+	.scrolled {
+		top: 0;
+		position: sticky;
+		backdrop-filter: blur(1rem);
+		z-index: 2;
+
+		background-color: var(--pico-header-background);
+		box-shadow: var(--pico-card-box-shadow);
+		border-bottom: var(--pico-border-width) solid transparent;
+		border-bottom-color: var(--pico-header-border-color);
+
+		transition:
+			border-top-color 0.4s ease-in-out,
+			box-shadow 0.4s ease-in-out;
+	}
+
 	header .container {
 		padding-right: 0;
 	}
