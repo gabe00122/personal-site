@@ -1,18 +1,25 @@
 <svelte:head>
-	<title>Gabriel Keith - Software Developer</title>
-	<meta
-		name="description"
-		content="I'm a software engineer with a background in front-end development and a strong interest in machine learning (especially reinforcement learning!)."
-	/>
+	<title>Gabriel Keith</title>
+	<meta name="description" content="I teach agents from experience in social environments." />
 </svelte:head>
 
-<p>Software engeneer and independent researcher</p>
-
-<p>This is a site to share my projects and thoughts on AI!</p>
-
-<div>
-	Contact me on:
-	<div><a href="https://github.com/gabe00122">Github</a></div>
-	<div><a href="https://www.linkedin.com/in/gabriel-keith/">Linkedin</a></div>
-	<div><a href="mailto:gabe@gabrielkeith.dev">gabe@gabrielkeith.dev</a></div>
+<div class="landing">
+	<h1>Gabriel Keith</h1>
+	<p>I teach agents from experience in social environments.</p>
 </div>
+
+<style>
+	.landing {
+		margin-top: 20vh;
+		text-align: center;
+	}
+
+	.landing h1 {
+		--pico-font-size: 3rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.landing p {
+		color: var(--pico-muted-color);
+	}
+</style>

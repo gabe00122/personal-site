@@ -6,24 +6,49 @@
 </script>
 
 <header>
-	<nav aria-label="Main" lang="en">
-		<ul>
-			<li><strong>Gabriel Keith</strong></li>
-			<li>
-				<button onclick={toggleTheme} class="outline contrast" style="border: none;">
-					{#if $theme === 'dark'}
-						<Sun />
-					{:else}
-						<Moon />
-					{/if}
-				</button>
-			</li>
-		</ul>
-		<ul>
-			<li><a lang="en" href="/">About</a></li>
-			<li><a lang="en" href="/blog">Blog</a></li>
-			<li><a lang="en" href="/projects">Projects</a></li>
-			<!-- <li><a lang="en" href="/music">Music</a></li> -->
-		</ul>
-	</nav>
+	<div class="container">
+		<nav aria-label="Main" lang="en">
+			<!-- <ul>
+    			<li><a class="title contrast" href="/">Gabriel Keith</a></li>
+    		</ul> -->
+			<ul class="header-items">
+				<li class="title"><a class="contrast" href="/">Gabriel Keith</a></li>
+				<li><a class="contrast" lang="en" href="/about">About</a></li>
+				<li><a class="contrast" lang="en" href="/posts">Posts</a></li>
+				<!-- <li><a class="contrast" lang="en" href="/currently">Currently</a></li> -->
+				<li><a class="contrast" lang="en" href="/projects">Projects</a></li>
+				<!-- <li><a class="contrast" lang="en" href="/contact">Contact</a></li> -->
+			</ul>
+			<button onclick={toggleTheme} class="toggle-dark-button outline contrast">
+				{#if $theme === 'dark'}
+					<Sun />
+				{:else}
+					<Moon />
+				{/if}
+			</button>
+		</nav>
+	</div>
 </header>
+
+<style>
+	header .container {
+		padding-right: 0;
+	}
+
+	.header-items {
+		width: 100%;
+		display: flex;
+	}
+
+	.title {
+		margin-right: auto;
+	}
+
+	.title a {
+		font-weight: bold;
+	}
+
+	.toggle-dark-button {
+		border: none;
+	}
+</style>

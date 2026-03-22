@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '@picocss/pico/css/pico.pumpkin.min.css';
+	import '../app.css';
 
 	import Header from './header.svelte';
 	interface Props {
@@ -7,14 +8,12 @@
 	}
 
 	let { children }: Props = $props();
-
-	const children_render = $derived(children);
 </script>
 
-<div class="container">
+<div>
 	<Header />
 
 	<main>
-		{@render children_render?.()}
+		{@render children?.()}
 	</main>
 </div>

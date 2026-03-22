@@ -1,0 +1,4 @@
+.centered-card {
+	max-width: 40rem;
+	margin: var(--pico-block-spacing-vertical) auto;
+}
