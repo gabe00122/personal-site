@@ -17,7 +17,7 @@
 				scratch and with LLMs as social agents.
 			</p>
 		</section>
-		<img src="/profile.webp" alt="Gabriel Keith" class="profile-pic" />
+		<enhanced:img src="../../../static/profile.webp" alt="Gabriel Keith" class="profile-pic" />
 	</div>
 	<section>
 		<hgroup>
