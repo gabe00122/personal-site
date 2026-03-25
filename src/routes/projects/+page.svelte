@@ -28,7 +28,7 @@
 			<hr />
 			<ProjectCard
 				name="LlmRL"
-				description="Multi-step RL LLM fine tuning build from the ground up in Jax."
+				description="Multi-step RL LLM fine tuning build from the ground up in Jax. Custom Qwen 3 implementation."
 				repo="https://github.com/gabe00122/llm_rl"
 			/>
 			<hr />
