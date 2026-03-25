@@ -25,6 +25,10 @@
 		margin-right: auto;
 	}
 
+	img {
+		border-radius: var(--pico-border-radius);
+	}
+
 	img.right {
 		display: block;
 		margin-left: auto;
