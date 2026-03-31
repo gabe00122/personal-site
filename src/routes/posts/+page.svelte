@@ -21,7 +21,7 @@
 					</a>
 					<br />
 					<small>
-						{formatDate(post.date)} — {post.description}
+						{post.description}
 					</small>
 				</div>
 			{/each}

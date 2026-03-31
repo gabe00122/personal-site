@@ -4,7 +4,8 @@
 	import Maximize from 'lucide-svelte/icons/maximize';
 	import Minimize from 'lucide-svelte/icons/minimize';
 
-	import { theme } from '$lib/theme';
+	import { theme, darkColor, lightColor } from '$lib/theme';
+	import { isMobile } from '$lib/utils';
 
 	interface Props {
 		url: string;
@@ -21,7 +22,7 @@
 	let duration = $state(0);
 	let isFullscreen = $state(false);
 
-	let buttonFillColor = $derived($theme === 'dark' ? 'rgb(194, 199, 208)' : 'rgb(55, 60, 68)');
+	let buttonFillColor = $derived($theme === 'dark' ? darkColor : lightColor);
 
 	$effect(() => {
 		if (!videoEl) return;
@@ -69,65 +70,70 @@
 	}
 </script>
 
-<figure class="centered">
+<figure class="video-container">
 	<figcaption id="video-caption" class="centered-text">{description}</figcaption>
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="video-wrapper" bind:this={wrapperEl} onfullscreenchange={onFullscreenChange}>
 		<video
 			bind:this={videoEl}
 			bind:currentTime
 			bind:duration
+			playsinline
 			muted
 			aria-describedby="video-caption"
 			onclick={togglePlay}
 		>
 			<source src={url} type="video/mp4" />
 		</video>
-		<div class="controls">
-			<button class="btn" onclick={togglePlay} aria-label={paused ? 'Play' : 'Pause'}>
-				{#if paused}
-					<Play size={16} color={buttonFillColor} fill={buttonFillColor} />
-				{:else}
-					<Pause size={16} color={buttonFillColor} fill={buttonFillColor} />
-				{/if}
-			</button>
-			<input
-				type="range"
-				class="progress"
-				min="0"
-				max={duration || 0}
-				step="0.001"
-				value={currentTime}
-				oninput={seek}
-				onpointerdown={seekStart}
-				onpointerup={seekEnd}
-				aria-label="Seek"
-			/>
-			<span class="time">{formatTime(currentTime)} / {formatTime(duration)}</span>
-			<button
-				class="btn"
-				onclick={toggleFullscreen}
-				aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-			>
-				{#if isFullscreen}
-					<Minimize size={16} color={buttonFillColor} fill={buttonFillColor} />
-				{:else}
-					<Maximize size={16} color={buttonFillColor} fill={buttonFillColor} />
-				{/if}
-			</button>
-		</div>
+		{#if !isMobile()}
+			<div class="controls">
+				<button
+					class="btn outline contrast"
+					onclick={togglePlay}
+					aria-label={paused ? 'Play' : 'Pause'}
+				>
+					{#if paused}
+						<Play size={16} color={buttonFillColor} fill={buttonFillColor} />
+					{:else}
+						<Pause size={16} color={buttonFillColor} fill={buttonFillColor} />
+					{/if}
+				</button>
+				<input
+					type="range"
+					class="progress"
+					min="0"
+					max={duration || 0}
+					step="0.001"
+					value={currentTime}
+					oninput={seek}
+					onpointerdown={seekStart}
+					onpointerup={seekEnd}
+					aria-label="Seek"
+				/>
+				<span class="time">{formatTime(currentTime)} / {formatTime(duration)}</span>
+				<button
+					class="btn contrast outline"
+					onclick={toggleFullscreen}
+					aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+				>
+					{#if isFullscreen}
+						<Minimize size={16} color={buttonFillColor} fill={buttonFillColor} />
+					{:else}
+						<Maximize size={16} color={buttonFillColor} fill={buttonFillColor} />
+					{/if}
+				</button>
+			</div>
+		{/if}
 	</div>
 </figure>
 
 <style>
-	.centered {
-		width: fit-content;
-		margin-left: auto;
-		margin-right: auto;
+	.video-container {
 		margin-bottom: 1rem;
 	}
 
 	.video-wrapper {
+		margin-left: auto;
+		margin-right: auto;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
@@ -142,9 +148,6 @@
 	.video-wrapper:fullscreen video {
 		flex: 1;
 		min-height: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
 	}
 
 	.centered-text {
@@ -156,16 +159,12 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.4rem 0.5rem;
-		border-top: 1px solid var(--pico-muted-border-color);
 	}
 
 	.btn {
-		all: unset;
-		cursor: pointer;
+		padding: 0.5rem;
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0.15rem;
+		border: none;
 	}
 
 	.btn:hover {
@@ -173,7 +172,6 @@
 	}
 
 	.progress {
-		flex: 1;
 		cursor: pointer;
 		margin: 0;
 	}
@@ -182,6 +180,5 @@
 		font-size: 0.75rem;
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
-		color: var(--pico-color);
 	}
 </style>

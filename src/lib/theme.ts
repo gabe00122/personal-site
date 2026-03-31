@@ -7,6 +7,9 @@ const userTheme = browser && localStorage.getItem('color-scheme');
 
 export const theme = writable(userTheme ?? 'dark');
 
+export const darkColor = 'rgb(194, 199, 208)';
+export const lightColor = 'rgb(55, 60, 68)';
+
 // update the theme
 export function toggleTheme() {
 	theme.update((currentTheme) => {

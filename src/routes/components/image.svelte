@@ -11,12 +11,22 @@
 
 <figure>
 	<figcaption class="centered-text">{description}</figcaption>
-	<img src={url} alt={altText} class:centered={align === 'center'} class:right={align === 'right'} />
+	<img
+		class="img"
+		src={url}
+		alt={altText}
+		class:centered={align === 'center'}
+		class:right={align === 'right'}
+	/>
 </figure>
 
 <style>
 	.centered-text {
 		text-align: center;
+	}
+
+	.img {
+		border-radius: var(--pico-border-radius);
 	}
 
 	img.centered {
