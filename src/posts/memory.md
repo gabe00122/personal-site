@@ -14,7 +14,6 @@ published: false
 <script>
     import VideoPlayer from "../routes/components/video.svelte";
     import Image from "../routes/components/image.svelte";
-    import Collapsible from "../routes/components/collapsible.svelte"
 </script>
 
 
