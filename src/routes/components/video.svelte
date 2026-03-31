@@ -19,6 +19,10 @@
 		margin-bottom: 1rem;
 	}
 
+	.video-container video {
+		max-width: 100%;
+	}
+
 	.centered-text {
 		text-align: center;
 	}
