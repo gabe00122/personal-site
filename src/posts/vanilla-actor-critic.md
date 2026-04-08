@@ -292,6 +292,7 @@ critic_features = (64, 64)
 
 <VideoPlayer
     url="/blog/actorcritic/cartpole-post-training.mp4"
+    poster="/blog/actorcritic/cartpole-post-training-poster.webp"
     description="A cart-pole policy after 800,000 steps training"
     alt="A video of a cart-pole policy after 800,000 steps training"
 />

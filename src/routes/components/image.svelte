@@ -27,6 +27,9 @@
 
 	.img {
 		border-radius: var(--pico-border-radius);
+		margin-left: auto;
+		margin-right: auto;
+		display: block;
 	}
 
 	img.centered {

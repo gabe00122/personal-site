@@ -1,14 +1,8 @@
 ---
-title: Mapox
-description: Memory in Multi-Agent Reinforcement Learning
+title: Memory and Implicit Communication
+description: Memory is a prerequisite for useful communication in partially observable multi-agent environments.
 date: '2026-03-24'
-categories:
-  - reinforcement learning
-  - jax
-  - flax
-  - transformer
-  - deep learning
-published: false
+published: true
 ---
 
 <script>
@@ -19,152 +13,113 @@ published: false
 
 ---
 
-## Memory and Communication
-
-The primary motivation for my projects JaxRL and Mapox was to study the effects of memory arceteectures on emergent communication.
-While what I wanted to study was emergent communication I ended up spending most of my time working on memory.
-
-Memory is a strong prerequeists to intresting communicaiton, and I think there's likely a deep connection between the charecteristics of the memory and the charecteristics of the signals between agents.
-
-Memory both lets agents *gather* something that will be useful to communicate and lets agents make *use* of communication later.
-
-Another justification for focusing on memory is that social environments are always pomdps. 
-If you are in a enviorment with unknown agents then those agents policies are partilly observable state, if those agents also have memory than that's another axis of partially observable state. So adding memory to a multi agent envirnoment might mean that my memory needs to be used to reason about your memory and inclinations.
-
-I think there's also a connection between communication and exploration. Exploration is about gathering information that will let you make better decisions later, communication can also be about gathering information that will let you make better decisions later. Unlike exploration communication isn't always motovated by improving your own policy (although it certainly can be), you might have a incentive to improve the policy of a agent your cooperating with or in a aversarial setting to degrade the policy of another agent (deception).
-
-It's easy to imagine environments where agents have incentives to model eachothers memory inside their own memory and to act on the memory of another.
-
-All of this is to say I embarct to study communication but I ended up spending a disproportinete amount of my time thinking about memory.
-
-# note
-
-When you add memory to one agent that becomes more partially observable state to the other agents
-so adding memory to multiagent RL both gives them a tool to deal with partial observability but also makes it even more partially observable.
-I do think a environment where agents had hidden objectives would be both tractable and interesting
-they would need to learn if others are seeking to cooperate or not
-
-# note
-
----
-
-## Cooperative Exploration
-
-To test if agents could share information from their memory I designed a simple asymetric exploration game in my jax based environment collection [mapox](https://github.com/gabe00122/mapox)
-
-The following model used my [jaxrl](https://github.com/gabe00122/jaxrl) framework for training and is saved to hugging face [here](https://huggingface.co/gabe00122/mapox-checkpoints)
-
-There are two agent types, a **fast rabbit** and a **slow turtle** agent. Both agents are rewarded when the **turtle reaches the flag** location.
-
-- Both agents have seperate memory
-- Agents have a and egocentric field of view highlighted by the shaded square
-- Each episode uses a new map from a map generator
-- The rabits only effect on the environment is to observe and to be observed by the turtle
-
-Here's an example episode
 <VideoPlayer
-    url="/blog/memorycomm/scouts.mp4"
-    description=""
-    alt="A video of a cart-pole policy after 800,000 steps training"
+    url="/blog/memorycomm/return_center.mp4"
+    description="Agents coordinating to dig through walls to reach a hidden goal"
+    alt="A video of agents coordinating to dig through walls to reach a hidden goal location in the center of the map"
 />
 
-To test how much guidence the rabbit is really providing I hand crafted some maps where exhastive searches by the turtle would be very ineffecient. This map was not part of the training set.
+These agents haven't been trained on this map, have separate memory and rewards and yet surprisingly quickly they seem to come to a collective decision that they should explore the center of the map even though it is more costly then exploring the outside.
 
 <VideoPlayer
     url="/blog/memorycomm/scouts_fork.mp4"
-    description=""
-    alt="A video of a cart-pole policy after 800,000 steps training"
+    description="A fast rabbit agent guides a slow turtle agent to a goal location."
+    alt="A video of a fast rabbit agent guides a slow turtle agent to a goal location, the map has hallways that are long and would be slow to explore for the turtle agent."
 />
 
-Novel maps don't always work, in this one the turtle nearly sees the goal before turing around.
+Similarly the rabbit and turtle haven't been trained on this map and the turtle is so slow exploring all of the corridors would be costly, the rabbit is able to point the turtle down the right hallway by staying in it's field of view.
+
+## Spatial Memory and Communication
+
+I started this project to explore emergent communication in multi-agent reinforcement learning, but I quickly found that memory was a necessary prerequisite. Agents need memory both to gather information worth communicating and to make use of communicated information later.
+
+Multi-agent environments are naturally partially observable. Not only is the world state hidden, but other agents also have private observations and internal state. If another agent uses memory, then its behavior depends on what it has seen before, not just what it sees now. From your perspective, that memory is part of the hidden state.
+
+This creates a recursive problem: memory helps an agent deal with partial observability, but once one agent has memory, every other agent faces a harder inference problem. They now have to model policies conditioned on latent internal state.
+
+That is why I became interested in memory before communication. In this post, I use "communication" broadly: not just explicit messages, but any observable behavior that changes another agent's future beliefs or decisions.
+
+Communication and exploration also have a similar structure. Exploration improves your own future decisions by improving your knowledge of the world. Communication improves another agent's future decisions by changing what they know about the world. If agents have different goals, that change does not have to be helpful. Honest signaling, selective disclosure, and deception are all forms of communication.
+
+## What I Build
+
+I wanted to see if model free RL with a transformer over time could learn something similar to spatial memory and if this spatial memory could be communicated between agents with sufficient self play. I also wanted to see if training the same model on multiple tasks would lead to task to task skill transfer.
+
+This builds on the transformer RL framework described in my [previous post](/posts/transformer_rl) the key addition is multitask training, categorical value heads and a larger model. The training framework and can be found at [jaxrl](https://github.com/gabe00122/jaxrl) and the environments [mapox](https://github.com/gabe00122/mapox)
+
+The checkpoint shown here was trained jointly on four environments. I focus on two of them because they most clearly expose the role of memory and implicit communication. The other two: a competitive king-of-the-hill game and a predator-prey game-were part of the multitask training mix but deserve separate analysis because the incentives and learned behaviors are qualitatively different.
+
+---
+
+### Cooperative Exploration
+
+To test if agents could share information from their memory when incentives were perfectly aligned I designed a simple asymmetric exploration game
+
+There are two agent types, a **fast rabbit** and a **slow turtle** agent. Both agents are rewarded when the **turtle reaches the flag** location.
+
+- Both agents have separate memory
+- Agents have an egocentric field of view highlighted by the shaded square
+- Each episode uses a new map from a map generator
+- The rabbit's only effect on the environment is to observe and to be observed by the turtle
+- There is no explicit communication channel
+
+Here's an example episode on the type of map these agents are trained on:
+<VideoPlayer
+    url="/blog/memorycomm/scouts.mp4"
+    description="Typical map from the training set map generator."
+    alt="A video of a Typical map from the training set map generator."
+/>
+
+To test generalization I hand crafted maps to challenge the agents, this is what was used for the first two video demonstrations, the challenge maps are never in the training set.
+
+<VideoPlayer url="/blog/memorycomm/scouts_blog_d.mp4" />
+
+Hand crafted maps don't always work, in this one the turtle nearly sees the goal before turning around. I think something about the corridors being close together confused them. Perhapes the scout developed a exploration huristic where it prefers a certain spacing to get good coverage of the map but this confuses the communication signal between agents.
 
 <VideoPlayer
     url="/blog/memorycomm/scouts_fork_fail.mp4"
-    description=""
-    alt="A video of a cart-pole policy after 800,000 steps training"
+    description="The turtle almost sees the goal but turns around 1-tile out of the visual range"
+    alt=""
 />
+
+Training on the other environments leads to much better preformace then training on the scout environment alone. My theory is the relationship between the scout and the turtle is inheriently unstable because they're both adapting to each other at the same time so it's a challenging moving target. The other environments help with a core spacial memory ability that benifits this environment but is challenging to learn from this environment alone.
+
+
+<Image url="/blog/memorycomm/scouts_comparison.webp" description="" alt="" />
+
+I wondered if scaling up the preportion of the population that were scouts would improve the average reward but this does not seem to be the case. Having one rabbit and one turtle per environment seems to be a sweet spot. I thought that 3 rabbits per turtle would lead to higher average reward but it seems to be lower than just one to one. A turtle with no rabbits preforms worse than with one rabbit but better than the one to one ratio without multitask training. This suggests rabbits can be a distration in some way.
+
+<Image url="/blog/memorycomm/scouts_reward.webp" description="" alt="" />
+
 
 ---
 
 ### Find & Return
-This environment was designed to test the ability for agents to explore a unknown map for a goal location and once found to use thier memory of the space to return as quickly as possible.
+Initially this environment was designed to test a single agent's spatial memory but interesting things happen when you add multiple agents into the environment together.
 
-Because there's only one goal location I added the ability to dig walls to no goal location will be unreachable. Digging a wall adds a timeout to the agent before it can act again to make digging walls slower and more costly
-
-Search for goal flags in a procedurally-generated maze with destructible walls. Agents are teleported to a new random position after finding a flag — testing persistent spatial memory.
-
+- Agents spawn in a random location on a randomized map and must find the flag location
+- When agents find the flag they are given a reward and teleported to a random new location, this is still a single episode
+- Walls can be destroyed but causes a timeout to the agent that destroyed it
+- Agents can see each other but otherwise don't interact directly
 
 <VideoPlayer
     url="/blog/memorycomm/return_blog.mp4"
-    description="A cart-pole policy after 800,000 steps training"
-    alt="A video of a cart-pole policy after 800,000 steps training"
+    description="Typical map from the training set generator"
+    alt="typical map from the training set generator"
 />
 
-Similarly to the cooperative exploration environment, agents seem to group up consistantly despite no shared reward. The simplest explination is that this helps them dig walls faster but even when wall digging is disabled the grouping behavoir presists. I designed a map (again this wasn't in the training set) to test their ability to find a goal location when it was hidden behind a costly block of walls. The agents are able to gather and determine that they should dig through to the center.
+Agents seem to group up consistently despite no shared reward. The simplest explanation is that this helps them dig walls faster but even when wall digging is disabled the grouping behavior persists.
 
-<VideoPlayer
-    url="/blog/memorycomm/return_center.mp4"
-    description="A cart-pole policy after 800,000 steps training"
-    alt="A video of a cart-pole policy after 800,000 steps training"
-/>
+<VideoPlayer url="/blog/memorycomm/leader_slow.mp4" />
 
-## Method
+You can lead the agents around if you manually control one, they don't always follow you but if you act decisive it's more likely that they will. Sometimes the agent in the rear of the group initiats the group to change course.
 
-All of the videos shown used the same model weights trained on both the environments simultaniusly as a even split. Two other competative environments not shown here were also part of the training set. The model trained for about 4 hours on my 5090 at roughly 700k steps per second.
+<Image url="/blog/memorycomm/agent_count.webp" />
 
-<Image url="/blog/memorycomm/mapox_model_architecture.svg" />
+Contrary to the cooperative exploration environment, in this environment individual reward scales up relably with agent count. This strongly suggests they are gaining a benifit from being in groups and the benifit goes up as the groups become larger.
 
-## Results
+### Conclusion
 
-<Image url="/blog/memorycomm/rewards.png" />
+This work barley scratches the surface, it shows that memory and self play alone is sufficent for some basic agent to agent signaling but particularly in the cooperative exploration environment I think there's a much higher ceiling for how well agents could coordinate. I belive there's a strong posibility that more specialized multiagent tecniques would lead to much better preformace and I would invite anyone interested to use these environments as a bunch mark and try to improve on these results.
 
-<Image url="/blog/memorycomm/agent_count.png" />
-
-### Scaling Behavior
-[Depth and width scaling charts from the presentation — transformer memory benefits more from depth than width in these environments]
-
-### Communication Scales with Agent Count
-Increasing agent count improved *individual* reward — a sign of genuine emergent coordination rather than just parallelism.
-
----
-
-## Hypers
-
-
-### Model
-
-| Parameter | Value |
-|---|---|
-| Hidden dim | 256 |
-| Layers | 16 |
-| Attention | GQA, 4Q / 1KV, head dim 32 |
-| RoPE wavelength | 10,000 |
-| FFN | 768-dim, GLU |
-| Activation | GELU |
-| Normalization | RMS norm, pre-norm only |
-| Value head | HL-Gauss, 51 logits over [−10, 10], σ = 0.104 |
-| Value hidden dim | 768 |
-| CNN encoder | 3×3 kernels, strides 2/1/1, channels 16 → 32 |
-| Compute dtype | bfloat16 |
-| Param dtype | float32 |
-| Init | Glorot uniform |
-
-### Training
-
-| Parameter | Value |
-|---|---|
-| Optimizer | Muon |
-| Learning rate | 3.0 × 10⁻³ |
-| Weight decay | 1.07 × 10⁻⁴ |
-| AdamW β₁ / β₂ | 0.935 / 0.904 |
-| Max grad norm | 0.396 |
-| Algorithm | PPO |
-| Minibatches | 32 |
-| Discount (γ) | 0.99 |
-| GAE λ | 0.91 |
-| Value coeff | 0.539 |
-| Value clip | 0.283 |
-| Entropy coeff | 0.001 → 0.0 (annealed) |
-| Advantage norm | yes |
-| Max episode steps | 512 |
-| Update steps | 5,000 |
+A natural follow-up is to study trust and deception directly. I want to build environments where agents have private, role-dependent goals: some aligned with the group, others opposed to it. In that setting, communication is no longer just about sharing information, but about judging reliability and hidden intent.

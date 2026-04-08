@@ -7,10 +7,7 @@
 	<article class="centered-card">
 		<hgroup>
 			<h2 class="header-margin">Posts</h2>
-			<p>
-				Occasional writing on my projects and ideas. Some of these are long-form technical posts,
-				some are quick observations.
-			</p>
+			<p>Occasional writing on my projects and ideas.</p>
 		</hgroup>
 		<hr />
 		<div class="posts">
