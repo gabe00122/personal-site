@@ -28,6 +28,8 @@ These agents haven't been trained on this map, have separate memory and rewards 
 
 Similarly the rabbit and turtle haven't been trained on this map and the turtle is so slow exploring all of the corridors would be costly, the rabbit is able to point the turtle down the right hallway by staying in its field of view.
 
+---
+
 ## Spatial Memory and Communication
 
 I started this project to explore emergent communication in multi-agent reinforcement learning, but I quickly found that memory was a necessary prerequisite. Agents need memory both to gather information worth communicating and to make use of communicated information later.
@@ -39,6 +41,8 @@ This creates a recursive problem: memory helps an agent deal with partial observ
 That is why I became interested in memory before communication. In this post, I use "communication" broadly: not just explicit messages, but any observable behavior that changes another agent's future beliefs or decisions.
 
 Communication and exploration also have a similar structure. Exploration improves your own future decisions by improving your knowledge of the world. Communication improves another agent's future decisions by changing what they know about the world. If agents have different goals, that change does not have to be helpful. Honest signaling, selective disclosure, and deception are all forms of communication.
+
+---
 
 ## What I Built
 
@@ -123,6 +127,8 @@ You can lead the agents around if you manually control one, they don't always fo
 <Image url="/blog/memorycomm/agent_count.webp" description="Episode reward scales reliably with agent count in the Find & Return environment" alt="Line graph showing episode reward over 1000 training steps for 4 agents (purple, ~14.2), 8 agents (teal, ~15.1), and 16 agents (yellow, ~16.1). More agents consistently yields higher reward, with all configurations showing rapid learning in the first 200 steps then gradual improvement." />
 
 Contrary to the cooperative exploration environment, in this environment individual reward scales up reliably with agent count. This strongly suggests they are gaining a benefit from being in groups and the benefit goes up as the groups become larger.
+
+---
 
 ### Conclusion
 
