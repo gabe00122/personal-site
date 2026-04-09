@@ -1,7 +1,7 @@
 ---
 title: Memory and Implicit Communication
 description: Emergent multi-agent signaling with spatial memory
-date: '2026-03-24'
+date: '2026-04-09'
 published: true
 ---
 
@@ -15,7 +15,7 @@ The two demos below preview the main result of this post: agents with no explici
 <VideoPlayer
     url="/blog/memorycomm/return_center.mp4"
     description="Demo 1: Find & Return"
-    alt="A video of agents coordinating to dig through walls to reach a hidden goal location in the center of the map"
+    alt="Multiple agents navigate a hand-crafted maze, digging through walls to converge on a hidden flag at the center of the map"
 />
 
 These agents haven't been trained on this map, have separate memory and rewards and yet surprisingly quickly they seem to come to a collective decision that they should explore the center of the map even though it is more costly then exploring the outside.
@@ -23,7 +23,7 @@ These agents haven't been trained on this map, have separate memory and rewards 
 <VideoPlayer
     url="/blog/memorycomm/scouts_fork.mp4"
     description="Demo 2: Cooperative Exploration"
-    alt="A video of a fast rabbit agent guides a slow turtle agent to a goal location, the map has hallways that are long and would be slow to explore for the turtle agent."
+    alt="A fast rabbit agent and a slow turtle agent navigate a map with long forked hallways. The rabbit explores ahead and positions itself so the turtle follows the correct corridor to the flag."
 />
 
 Similarly the rabbit and turtle haven't been trained on this map and the turtle is so slow exploring all of the corridors would be costly, the rabbit is able to point the turtle down the right hallway by staying in its field of view.
@@ -65,30 +65,34 @@ There are two agent types, a **fast rabbit** and a **slow turtle** agent. Both a
 Here's an example episode on the type of map these agents are trained on:
 <VideoPlayer
     url="/blog/memorycomm/scouts.mp4"
-    description="Typical map from the training set map generator."
-    alt="A video of a Typical map from the training set map generator."
+    description="Typical training map, the map is generated using perlin noise and there are few strait hallways"
+    alt="The rabbit quickly sweeps the map while the turtle follows at a slower pace, eventually reaching the flags."
 />
 
-To test generalization I hand-crafted maps to challenge the agents, this is what was used for the first two video demonstrations, the challenge maps are never in the training set. The scouts don't get distracted by unreachable goal locations which is cool. They seem to know the difference between one they can reach and one they can't get to.
+To test generalization I hand-crafted maps to challenge the agents, this is what was used for the first two video demonstrations, the challenge maps are never in the training set. The scouts don't get distracted by unreachable goal locations. They seem to know the difference between one they can reach and one they can't get to.
 
-<VideoPlayer url="/blog/memorycomm/scouts_blog_d.mp4"  />
+<VideoPlayer
+  url="/blog/memorycomm/scouts_blog_d.mp4"
+  description="Hand-crafted map: agents ignore a visible but unreachable flag behind a wall"
+  alt="Agents navigate past a flag visible through a wall but blocked by it. Rather than attempting to reach the inaccessible flag, they continue exploring and find the reachable goal."
+/>
 
 Hand-crafted maps don't always work, in this one the turtle nearly sees the goal before turning around. I think something about the corridors being close together confused them. Perhaps the scout developed an exploration heuristic where it prefers a certain spacing to get good coverage of the map but this confuses the communication signal between agents.
 
 <VideoPlayer
     url="/blog/memorycomm/scouts_fork_fail.mp4"
-    description="The turtle almost sees the goal but turns around 1-tile out of the visual range"
-    alt=""
+    description="Failure case: tightly packed corridors confuse the rabbit's exploration pattern, and the turtle turns back just before seeing the goal"
+    alt="A map with many narrow hallways packed close together on the left side. The rabbit navigates the corridors but the turtle agent turns around one tile short of seeing the flag — a failure of the implicit communication signal."
 />
 
 Training on the other environments leads to much better performance than training on the scout environment alone. My theory is the relationship between the scout and the turtle is inherently unstable because they're both adapting to each other at the same time so it's a challenging moving target. The other environments help with a core spatial memory ability that benefits this environment but is challenging to learn from this environment alone.
 
 
-<Image url="/blog/memorycomm/scouts_comparison.webp" description="" alt="" />
+<Image url="/blog/memorycomm/scouts_comparison.webp" description="Single-task vs. multitask training reward curves for the cooperative exploration environment" alt="Line graph comparing scouts trained single-task (blue) versus multitask (red) over 5000 steps. The multitask run reaches roughly 5.0 reward while the single-task run plateaus around 3.5–4.0, a ~20–30% gap. Both have wide confidence bands indicating run-to-run variability." />
 
-I wondered if scaling up the proportion of the population that were scouts would improve the average reward but this does not seem to be the case. Having one rabbit and one turtle per environment seems to be a sweet spot. I thought that 3 rabbits per turtle would lead to higher average reward but it seems to be lower than just one to one. A turtle with no rabbits performs worse than with one rabbit but better than the one to one ratio without multitask training. This suggests rabbits can be a distraction in some way.
+I wondered if scaling up the proportion of the population that were scouts would improve the average reward but this does not seem to be the case. Having one rabbit and one turtle per environment seems to be a sweet spot. I thought that 3 rabbits per turtle would lead to higher average reward but it seems to be lower than just one to one. A turtle with no rabbits performs worse than with one rabbit but better than the one to one ratio without multitask training. With optimal training more rabits should lead to strictly better exploration and therefor reward, the fact that it does not suggests a shortcoming in my current training approach.
 
-<Image url="/blog/memorycomm/scouts_reward.webp" description="" alt="" />
+<Image url="/blog/memorycomm/scouts_reward.webp" description="Effect of rabbit count on average reward: one rabbit outperforms zero or three" alt="Line graph comparing reward over 5000 training steps for zero scouts (blue, ~4.4), one scout (red, ~5.1), and three scouts (green, ~4.8). One scout achieves the best final reward; adding more scouts beyond one does not help and slightly hurts performance." />
 
 ---
 
@@ -102,17 +106,21 @@ Initially this environment was designed to test a single agent's spatial memory 
 
 <VideoPlayer
     url="/blog/memorycomm/return_blog.mp4"
-    description="Typical map from the training set generator"
-    alt="typical map from the training set generator"
+    description="Typical training map: agents spawn at random positions and search for the flag"
+    alt="Several agents spawn at random positions on a procedurally generated maze. They explore independently, find the flag, collect the reward, and are teleported to new random locations to repeat the process within the same episode."
 />
 
 Agents seem to group up consistently despite no shared reward. The simplest explanation is that this helps them dig walls faster but even when wall digging is disabled the grouping behavior persists.
 
-<VideoPlayer url="/blog/memorycomm/leader_slow.mp4" />
+<VideoPlayer
+  url="/blog/memorycomm/leader_slow.mp4"
+  description="Manual control demo: a human-controlled agent leads the others — they follow when it changes direction or starts digging"
+  alt="A human-controlled agent navigates the maze while nearby autonomous agents mirror its direction changes and digging actions, showing that agents use observed movement as an implicit signal."
+/>
 
 You can lead the agents around if you manually control one, they don't always follow you but if you act decisively it's more likely that they will. Sometimes the agent in the rear of the group initiates the group to change course.
 
-<Image url="/blog/memorycomm/agent_count.webp" />
+<Image url="/blog/memorycomm/agent_count.webp" description="Episode reward scales reliably with agent count in the Find & Return environment" alt="Line graph showing episode reward over 1000 training steps for 4 agents (purple, ~14.2), 8 agents (teal, ~15.1), and 16 agents (yellow, ~16.1). More agents consistently yields higher reward, with all configurations showing rapid learning in the first 200 steps then gradual improvement." />
 
 Contrary to the cooperative exploration environment, in this environment individual reward scales up reliably with agent count. This strongly suggests they are gaining a benefit from being in groups and the benefit goes up as the groups become larger.
 
