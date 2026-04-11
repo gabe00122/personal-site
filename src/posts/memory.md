@@ -48,7 +48,7 @@ Communication and exploration also have a similar structure. Exploration improve
 
 I wanted to see if model-free RL with a transformer over time could learn something similar to spatial memory and if this spatial memory could be communicated between agents with sufficient self-play. I also wanted to see if training the same model on multiple tasks would lead to task-to-task skill transfer.
 
-This builds on the transformer RL framework described in my [previous post](/posts/transformer_rl). The training framework and can be found at [jaxrl](https://github.com/gabe00122/jaxrl) and the environments [mapox](https://github.com/gabe00122/mapox)
+This builds on the transformer RL framework described in my [previous post](/posts/transformer_rl). The training framework can be found at [mapox-trainer](https://github.com/gabe00122/mapox-trainer) and the environments [mapox](https://github.com/gabe00122/mapox)
 
 The checkpoint shown here was trained jointly on four environments. I focus on two of them because they most clearly expose the role of memory and implicit communication. The other two: a competitive king-of-the-hill game and a predator-prey game-were part of the multitask training mix but deserve separate analysis because the incentives and learned behaviors are qualitatively different.
 
@@ -91,7 +91,6 @@ Hand-crafted maps don't always work, in this one the turtle nearly sees the goal
 
 Training on the other environments leads to much better performance than training on the scout environment alone. My theory is the relationship between the scout and the turtle is inherently unstable because they're both adapting to each other at the same time so it's a challenging moving target. The other environments help with a core spatial memory ability that benefits this environment but is challenging to learn from this environment alone.
 
-
 <Image url="/blog/memorycomm/scouts_comparison.webp" description="Single-task vs. multitask training reward curves for the cooperative exploration environment" alt="Line graph comparing scouts trained single-task (blue) versus multitask (red) over 5000 steps. The multitask run reaches roughly 5.0 reward while the single-task run plateaus around 3.5–4.0, a ~20–30% gap. Both have wide confidence bands indicating run-to-run variability." />
 
 I wondered if scaling up the proportion of the population that were scouts would improve the average reward but this does not seem to be the case. Having one rabbit and one turtle per environment seems to be a sweet spot. I thought that 3 rabbits per turtle would lead to higher average reward but it seems to be lower than just one to one. A turtle with no rabbits performs worse than with one rabbit but better than the one to one ratio without multitask training. With optimal training more rabits should lead to strictly better exploration and therefor reward, the fact that it does not suggests a shortcoming in my current training approach.
@@ -101,6 +100,7 @@ I wondered if scaling up the proportion of the population that were scouts would
 ---
 
 ### Find & Return
+
 Initially this environment was designed to test a single agent's spatial memory but interesting things happen when you add multiple agents into the environment together.
 
 - Agents spawn in a random location on a randomized map and must find the flag location

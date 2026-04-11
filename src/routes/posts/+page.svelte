@@ -9,10 +9,10 @@
 			<h2 class="header-margin">Posts</h2>
 			<p>Occasional writing on my projects and ideas.</p>
 		</hgroup>
-		<hr />
 		<div class="posts">
 			{#each data.posts as post}
 				<div class="post">
+					<hr />
 					<a href={'posts/' + post.slug}>
 						<strong>{post.title}</strong>
 					</a>
@@ -33,8 +33,5 @@
 	.posts {
 		display: flex;
 		flex-direction: column;
-	}
-	.post {
-		margin-bottom: 1rem;
 	}
 </style>

@@ -20,16 +20,16 @@
 			/>
 			<hr />
 			<ProjectCard
-				name="JaxRL"
+				name="Mapox Trainer"
 				writeup="/posts/transformer_rl"
-				description="High preformace Jax based multi-agent ppo implementation with first class support for transformers."
-				repo="https://github.com/gabe00122/jaxrl"
+				description="High performance Jax based multi-agent ppo implementation with first class support for transformers."
+				repo="https://github.com/gabe00122/mapox-trainer"
 			/>
 			<hr />
 			<ProjectCard
-				name="LlmRL"
-				description="Multi-step RL LLM fine tuning build from the ground up in Jax. Custom Qwen 3 implementation."
-				repo="https://github.com/gabe00122/llm_rl"
+				name="VALM"
+				description="JAX-based framework for online RL with LLMs. Custom Qwen3 implementation with LoRA support."
+				repo="https://github.com/gabe00122/valm"
 			/>
 			<hr />
 			<ProjectCard
