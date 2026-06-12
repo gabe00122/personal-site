@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { formatDate } from '$lib/utils.js';
 	let { data } = $props();
 </script>
 

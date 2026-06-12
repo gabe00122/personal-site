@@ -12,8 +12,8 @@ published: true
 ---
 
 <script>
-    import VideoPlayer from "../routes/components/video.svelte";
-    import Image from "../routes/components/image.svelte";
+    import VideoPlayer from "$lib/components/video.svelte";
+    import Image from "$lib/components/image.svelte";
 </script>
 
 # Introduction

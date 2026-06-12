@@ -12,8 +12,8 @@ published: true
 ---
 
 <script>
-  import VideoPlayer from "../routes/components/video.svelte";
-  import Image from "../routes/components/image.svelte";
+  import VideoPlayer from "$lib/components/video.svelte";
+  import Image from "$lib/components/image.svelte";
 </script>
 
 The goal of this project was to see if a simple actor critic could train a transformer from scratch to solve partially observable markov decision processes. While there have been a few works exploring the use of transformers in RL, in fully online settings RNNs remain more common.  

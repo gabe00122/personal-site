@@ -6,8 +6,8 @@ published: true
 ---
 
 <script>
-    import VideoPlayer from "../routes/components/video.svelte";
-    import Image from "../routes/components/image.svelte";
+    import VideoPlayer from "$lib/components/video.svelte";
+    import Image from "$lib/components/image.svelte";
 </script>
 
 The two demos below preview the main result of this post: agents with no explicit communication channel can still use movement and visibility as a signaling mechanism based on their in-context spacial memory.
