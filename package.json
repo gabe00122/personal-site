@@ -27,7 +27,7 @@
 		"eslint-plugin-svelte": "^3.11.0",
 		"mdsvex": "^0.12.3",
 		"prettier": "^3.1.1",
-		"prettier-plugin-svelte": "^3.2.6",
+		"prettier-plugin-svelte": "^4.1.0",
 		"rehype-autolink-headings": "^7.1.0",
 		"rehype-katex-svelte": "^1.2.0",
 		"rehype-slug": "^6.0.0",
@@ -38,12 +38,12 @@
 		"svelte": "^5.2.0",
 		"svelte-check": "^4.0.0",
 		"tslib": "^2.4.1",
-		"typescript": "^5.5.0",
+		"typescript": "^6.0.3",
 		"vite": "^8.0.0"
 	},
 	"type": "module",
 	"dependencies": {
 		"@tensorflow/tfjs": "^4.17.0",
-		"lucide-svelte": "^0.577.0"
+		"lucide-svelte": "^1.0.1"
 	}
 }
