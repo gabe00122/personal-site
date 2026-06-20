@@ -27,7 +27,7 @@ My experiment fine-tunes Qwen3 on Wordle using a small value model that consumes
 
 Historically, learned value functions for LLM PPO have usually taken one of two forms. The first is to train a value model at roughly LLM scale, which is expensive. The second is to attach a small value head to the final hidden state before the language-model projection. This is much cheaper, but it creates a different problem: the final hidden state is tightly coupled to the next-token distribution. Because almost every direction in the final latent affects the logits, attaching a value loss there risks fighting the policy objective.
 
-A growing body of evidence suggests that latents from deeper layers of the base model provide better representations for downstream predictions. I don't know which layers are most useful, so my approach was to take every n-th latent and map it to a smaller value prediction model.
+A growing body of evidence suggests that latents from deeper layers of the base model provide better representations for downstream predictions. PING (https://www.medrxiv.org/content/10.1101/2025.09.17.25336018v1) I don't know which layers are most useful, so my approach was to take every n-th latent and map it to a smaller value prediction model.
 
 Training an existing policy with a randomly initialized value network could be harmful to the policy (VC-PPO), since the value may be very far from the true mean return. One solution is to warm up the value function offline on a frozen policy before online learning. However, with a frozen base model, this gives the value network no way to integrate history and context in its own learned way. Being able to learn a function of history is particularly important for value prediction because it is a long-term forecast of the future and is highly dependent on the environment state.
 
@@ -74,6 +74,8 @@ x = jax.nn.silu(x) * gate
 x = self._encode_down(x)
 
 ```
+
+I use a swiglu style mlp block with normalization so the value network can selectively filter latents from the base model into it's residual stream.
 
 ...
 
