@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { darkColor, lightColor, theme } from '$lib/theme';
 	import type { Episode } from './types';
 
 	interface Props {
@@ -10,7 +11,23 @@
 		tokensHeight?: string;
 	}
 
+	type Theme = 'light' | 'dark';
 	type MetricValues = ArrayLike<number>;
+
+	const RAMP = {
+		light: {
+			seq: { l0: 0.96, l1: 0.8, c0: 0.02, c1: 0.13 },
+			div: { l0: 0.96, l1: 0.82, c1: 0.13 }
+		},
+		dark: {
+			seq: { l0: 0.22, l1: 0.46, c0: 0.01, c1: 0.12 },
+			div: { l0: 0.21, l1: 0.46, c1: 0.12 }
+		}
+	} as const;
+
+	const HUE_SEQ = 255;
+	const HUE_NEG = 255;
+	const HUE_POS = 40;
 
 	let {
 		episode,
@@ -22,8 +39,13 @@
 
 	let tokenElements = $state<HTMLElement[]>([]);
 	let scrollContainer = $state<HTMLDivElement | null>(null);
+	let colorTheme = $derived<Theme>($theme === 'light' ? 'light' : 'dark');
+	let tokenTextColor = $derived(colorTheme === 'dark' ? darkColor : lightColor);
 	let metricValues = $derived(getMetricValues(episode, metricKey));
 	let metricRange = $derived(getMetricRange(metricValues));
+
+	const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+	const cl01 = (x: number) => Math.min(1, Math.max(0, x));
 
 	function getMetricValues(episode: Episode, metricKey: string): MetricValues | null {
 		if (metricKey === 'none') {
@@ -52,24 +74,41 @@
 			max = Math.max(max, value);
 		}
 
-		return min === Infinity || min === max ? null : { min, max };
+		return min === Infinity ? null : { min, max };
 	}
 
-	function getHue(value: number | undefined) {
-		if (value === undefined || !Number.isFinite(value)) {
+	function sequentialColor(value: number, min: number, max: number, theme: Theme, hue = HUE_SEQ) {
+		if (max === min) {
 			return 'transparent';
 		}
 
-		if (metricRange === null) {
-			return 'color-mix(in srgb, var(--token-color) 18%, transparent)';
+		const colorRamp = RAMP[theme].seq;
+		const ratio = cl01((value - min) / (max - min));
+		return `oklch(${lerp(colorRamp.l0, colorRamp.l1, ratio)} ${lerp(colorRamp.c0, colorRamp.c1, ratio)} ${hue})`;
+	}
+
+	function divergingColor(value: number, min: number, max: number, theme: Theme) {
+		const maxAbs = Math.max(Math.abs(min), Math.abs(max));
+		if (maxAbs === 0) {
+			return 'transparent';
 		}
 
-		const ratio = Math.min(
-			Math.max((value - metricRange.min) / (metricRange.max - metricRange.min), 0),
-			1
-		);
-		const hue = (1 - ratio) * 240;
-		return `hsl(${hue}, 50%, 50%)`;
+		const colorRamp = RAMP[theme].div;
+		const scaledValue = Math.max(-1, Math.min(1, value / maxAbs));
+		const magnitude = Math.abs(scaledValue);
+		return `oklch(${lerp(colorRamp.l0, colorRamp.l1, magnitude)} ${colorRamp.c1 * magnitude} ${scaledValue >= 0 ? HUE_POS : HUE_NEG})`;
+	}
+
+	function getTokenColor(value: number | undefined) {
+		if (value === undefined || !Number.isFinite(value) || metricRange === null) {
+			return 'transparent';
+		}
+
+		if (metricRange.min < 0 && metricRange.max > 0) {
+			return divergingColor(value, metricRange.min, metricRange.max, colorTheme);
+		}
+
+		return sequentialColor(value, metricRange.min, metricRange.max, colorTheme);
 	}
 
 	function selectToken(index: number) {
@@ -124,7 +163,11 @@
 	});
 </script>
 
-<div bind:this={scrollContainer} class="tokens-pane" style="--tokens-height: {tokensHeight};">
+<div
+	bind:this={scrollContainer}
+	class="tokens-pane"
+	style="--tokens-height: {tokensHeight}; --viz-token-text-color: {tokenTextColor};"
+>
 	<div class="tokens font-mono whitespace-pre-wrap leading-tight">
 		{#each episode.tokens as token, index}
 			<span
@@ -134,7 +177,7 @@
 				aria-pressed={selectedIndex === index}
 				class:hovered={hoveredIndex === index && selectedIndex !== index}
 				class:selected={selectedIndex === index}
-				style="--viz-token-color: {getHue(metricValues?.[index])};"
+				style="--viz-token-color: {getTokenColor(metricValues?.[index])};"
 				onclick={() => selectToken(index)}
 				onpointerenter={() => hoverToken(index)}
 				onpointerleave={() => hoverToken(null)}
@@ -153,9 +196,6 @@
 	.tokens-pane {
 		max-height: var(--tokens-height);
 		overflow-y: scroll;
-		scrollbar-color: var(--pico-muted-color) var(--pico-card-sectioning-background-color);
-		scrollbar-gutter: stable;
-		scrollbar-width: auto;
 		padding: 0.75rem;
 	}
 
@@ -175,6 +215,7 @@
 		white-space: pre-wrap;
 
 		background-color: var(--viz-token-color);
+		color: var(--viz-token-text-color);
 		cursor: pointer;
 	}
 

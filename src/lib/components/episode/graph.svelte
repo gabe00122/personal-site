@@ -109,7 +109,7 @@
 				y="value"
 				{yDomain}
 				{series}
-				padding={{ top: 0, right: 8, bottom: 24, left: 30 }}
+				padding={{ top: 0, right: 8, bottom: 24, left: 35 }}
 				props={{
 					grid: { yTicks: Y_AXIS_TICK_COUNT },
 					yAxis: {
