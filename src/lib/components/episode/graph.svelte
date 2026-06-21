@@ -14,6 +14,8 @@
 		value: number;
 	};
 
+	const Y_AXIS_TICK_COUNT = 4;
+
 	let {
 		episode,
 		metricKey,
@@ -26,6 +28,7 @@
 		metricKey === 'none' ? null : (episode.tokenMetrics[metricKey] ?? null)
 	);
 	let chartData = $derived(getChartData(metricValues));
+	let yDomain = $derived(getYDomain(chartData));
 	let hoveredDatum = $derived(getDatum(hoveredIndex));
 	let selectedDatum = $derived(getDatum(selectedIndex));
 	let series = $derived([
@@ -55,6 +58,23 @@
 		return chartData[index];
 	}
 
+	function getYDomain(data: MetricDatum[]): [number, number] | undefined {
+		if (data.length === 0) {
+			return undefined;
+		}
+
+		let min = 10;
+		let max = -10;
+		for (const { value } of data) {
+			min = Math.min(min, value);
+			max = Math.max(max, value);
+		}
+
+		const span = max - min;
+		const padding = span === 0 ? 1 : span * 0.08;
+		return [min - padding, max + padding];
+	}
+
 	function tooltipIndex() {
 		return (context?.tooltipState.data as Partial<MetricDatum> | null)?.index ?? null;
 	}
@@ -82,7 +102,23 @@
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="chart" onclick={selectDatum} onmousemove={updateHoverIndex}>
-			<LineChart bind:context data={chartData} x="index" y="value" {series}>
+			<LineChart
+				bind:context
+				data={chartData}
+				x="index"
+				y="value"
+				{yDomain}
+				{series}
+				padding={{ top: 14, right: 8, bottom: 24, left: 42 }}
+				props={{
+					grid: { yTicks: Y_AXIS_TICK_COUNT },
+					yAxis: {
+						rule: true,
+						ticks: Y_AXIS_TICK_COUNT,
+						tickLabelProps: { dx: -8 }
+					}
+				}}
+			>
 				{#snippet highlight()}
 					<Highlight
 						data={selectedDatum}
@@ -135,10 +171,16 @@
 
 	.metric-graph :global(.lc-axis-tick-label) {
 		fill: var(--pico-muted-color);
+		stroke: none;
+		stroke-width: 0;
 	}
 
 	.metric-graph :global(.lc-axis-tick) {
 		stroke: none;
+	}
+
+	.metric-graph :global(.lc-text-svg) {
+		overflow: visible;
 	}
 
 	.metric-graph :global(.lc-grid-x-line),
@@ -146,6 +188,16 @@
 	.metric-graph :global(.lc-rule-x-line),
 	.metric-graph :global(.lc-rule-y-line) {
 		stroke: var(--pico-border-color);
+	}
+
+	.metric-graph :global(.lc-axis.placement-left .lc-axis-rule) {
+		stroke: var(--pico-muted-color);
+		stroke-width: 1.5px;
+	}
+
+	.metric-graph :global(.lc-axis.placement-left .lc-axis-tick) {
+		stroke: var(--pico-muted-color);
+		stroke-width: 1px;
 	}
 
 	.metric-graph :global(.lc-highlight-line) {

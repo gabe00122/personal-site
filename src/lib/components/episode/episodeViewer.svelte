@@ -4,6 +4,7 @@
 	import type { Episode } from './types';
 	import Tokens from './tokens.svelte';
 	import Graph from './graph.svelte';
+	import TokenDetail from './tokenDetail.svelte';
 
 	interface Props {
 		/** URL of a static episode JSON file (EncodedEpisode shape). */
@@ -54,13 +55,14 @@
 		<div class="card">
 			<div class="toolbar">
 				<label>
-					Highlight
+					Show
 					<select bind:value={metricKey}>
 						{#each metricOptions as option (option)}
 							<option value={option}>{option}</option>
 						{/each}
 					</select>
 				</label>
+				<TokenDetail {episode} {metricKey} {selectedIndex} {hoveredIndex} />
 			</div>
 			<div class="graph-pane">
 				<Graph {episode} {metricKey} bind:selectedIndex bind:hoveredIndex />
@@ -88,6 +90,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		overflow-x: auto;
 		padding: 0.5rem 0.75rem;
 		border-bottom: 1px solid var(--pico-border-color);
 		font-size: 0.8rem;

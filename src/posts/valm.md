@@ -84,6 +84,8 @@ I use a swiglu style mlp block with normalization so the value network can selec
 
 Wordle was used as a test environment to explore this method. It is a simple text-based game involving uncertainty and constraint resolution. While more work needs to be done to compare this method with other approaches, it seems to be promising and efficient. I'm able to train Qwen3-4B-Instruct-2507 from a 1% solve rate on Wordle to 99% in 11 hours on a single consumer GPU. Not only does the solve rate go up, but the model also learns to use the response context as a sort of scratchpad space to search through letter permutations based on the known constraints. This scratchpad strategy evolves over the course of training, and it's not entirely clear whether it is important to the policy or a vestigial artifact. Not only does value approximation lead to learning, but bootstrapped returns are also more effective than Monte Carlo returns.
 
+**Note wordle is a POMDP not a contextual bandit**
+
 Things to prove:
 
 * Beats using only the last-layer latent
