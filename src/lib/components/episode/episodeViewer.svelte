@@ -1,0 +1,131 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { decodeEpisode } from './decode';
+	import type { Episode } from './types';
+	import Tokens from './tokens.svelte';
+	import Graph from './graph.svelte';
+
+	interface Props {
+		/** URL of a static episode JSON file (EncodedEpisode shape). */
+		url: string;
+		/** Metric used for the initial token heatmap + graph. */
+		metric?: string;
+		/** Height of the scrollable token area. */
+		tokensHeight?: string;
+	}
+
+	let { url, metric = 'rewards', tokensHeight = '18rem' }: Props = $props();
+
+	let episode = $state<Episode | null>(null);
+	let loadError = $state(false);
+	let metricKey = $state('none');
+	let selectedIndex = $state<number | null>(null);
+	let hoveredIndex = $state<number | null>(null);
+
+	let metricOptions = $derived(episode ? ['none', ...Object.keys(episode.tokenMetrics)] : ['none']);
+
+	onMount(async () => {
+		try {
+			const response = await fetch(url);
+			if (!response.ok) {
+				throw new Error(`Failed to load episode: ${response.status}`);
+			}
+			const decoded = decodeEpisode(await response.json());
+			metricKey = metric in decoded.tokenMetrics ? metric : 'none';
+			// Select the first model-generated (policy) token by default so the
+			// detail panel opens on something meaningful rather than a prompt token.
+			const policyMask = decoded.tokenMetrics['policy_mask'];
+			const firstPolicy = policyMask ? policyMask.findIndex((v) => v >= 0.5) : -1;
+			selectedIndex = firstPolicy >= 0 ? firstPolicy : 0;
+			episode = decoded;
+		} catch (error) {
+			console.error(error);
+			loadError = true;
+		}
+	});
+</script>
+
+<figure class="episode-viewer">
+	{#if loadError}
+		<div class="state">Could not load episode.</div>
+	{:else if episode === null}
+		<div class="state">Loading episode…</div>
+	{:else}
+		<div class="card">
+			<div class="toolbar">
+				<label>
+					Highlight
+					<select bind:value={metricKey}>
+						{#each metricOptions as option (option)}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+			</div>
+			<div class="graph-pane">
+				<Graph {episode} {metricKey} bind:selectedIndex bind:hoveredIndex />
+			</div>
+			<div class="tokens-pane" style="--tokens-height: {tokensHeight};">
+				<Tokens {episode} {metricKey} bind:selectedIndex bind:hoveredIndex />
+			</div>
+		</div>
+	{/if}
+</figure>
+
+<style>
+	.episode-viewer {
+		margin-block: var(--pico-block-spacing-vertical, 1rem);
+	}
+
+	.card {
+		border: 1px solid var(--pico-card-border-color, var(--pico-border-color));
+		border-radius: var(--pico-border-radius);
+		background: var(--pico-card-background-color, var(--pico-background-color));
+		overflow: hidden;
+	}
+
+	.toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid var(--pico-border-color);
+		font-size: 0.8rem;
+	}
+
+	.toolbar label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0;
+		color: var(--pico-muted-color);
+	}
+
+	.toolbar select {
+		width: auto;
+		margin: 0;
+		padding: 0.15rem 1.75rem 0.15rem 0.5rem;
+		font-size: 0.8rem;
+		height: auto;
+	}
+
+	.graph-pane {
+		height: 6rem;
+		padding: 0.25rem 0.5rem;
+		border-bottom: 1px solid var(--pico-border-color);
+	}
+
+	.tokens-pane {
+		max-height: var(--tokens-height);
+		overflow-y: auto;
+		padding: 0.75rem;
+	}
+
+	.state {
+		padding: 2rem;
+		text-align: center;
+		color: var(--pico-muted-color);
+		border: 1px solid var(--pico-border-color);
+		border-radius: var(--pico-border-radius);
+	}
+</style>

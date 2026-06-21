@@ -9,6 +9,7 @@ published: true
 <script>
     import VideoPlayer from "$lib/components/video.svelte";
     import Image from "$lib/components/image.svelte";
+    import EpisodeViewer from "$lib/components/episode/episodeViewer.svelte";
 </script>
 
 # Introduction
@@ -110,6 +111,10 @@ Things to prove:
 ## Training metrics
 
 ## Episode viewer
+
+Each token below is colored by the selected metric, and the graph plots that metric across the rollout. Prompt tokens are dimmed so the model's own generations stand out. Click or hover a token (or the graph) to inspect its values.
+
+<EpisodeViewer url="/blog/valm/episode-378152.json" metric="log_probs" caption="A Wordle rollout, colored by the model's per-token log-probability." />
 
 # Technical tricks
 
