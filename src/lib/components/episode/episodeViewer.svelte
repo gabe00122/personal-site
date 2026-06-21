@@ -35,11 +35,7 @@
 			}
 			const decoded = decodeEpisode(await response.json());
 			metricKey = metric in decoded.tokenMetrics ? metric : 'none';
-			// Select the first model-generated (policy) token by default so the
-			// detail panel opens on something meaningful rather than a prompt token.
-			const policyMask = decoded.tokenMetrics['policy_mask'];
-			const firstPolicy = policyMask ? policyMask.findIndex((v) => v >= 0.5) : -1;
-			selectedIndex = firstPolicy >= 0 ? firstPolicy : 0;
+			selectedIndex = 0;
 			episode = decoded;
 		} catch (error) {
 			console.error(error);
@@ -72,9 +68,7 @@
 			<div class="graph-pane">
 				<Graph {episode} {metricKey} bind:selectedIndex bind:hoveredIndex />
 			</div>
-			<div class="tokens-pane" style="--tokens-height: {tokensHeight};">
-				<Tokens {episode} {metricKey} bind:selectedIndex bind:hoveredIndex />
-			</div>
+			<Tokens {episode} {metricKey} {tokensHeight} bind:selectedIndex bind:hoveredIndex />
 		{/if}
 	</article>
 </figure>
@@ -125,32 +119,6 @@
 		height: 7rem;
 		padding: 0.25rem 0.5rem;
 		border-bottom: 1px solid var(--pico-muted-border-color, var(--pico-border-color));
-	}
-
-	.tokens-pane {
-		max-height: var(--tokens-height);
-		overflow-y: scroll;
-		scrollbar-color: var(--pico-muted-color) var(--pico-card-sectioning-background-color);
-		scrollbar-gutter: stable;
-		scrollbar-width: auto;
-		padding: 0.75rem;
-	}
-
-	.tokens-pane::-webkit-scrollbar {
-		width: 0.75rem;
-	}
-
-	.tokens-pane::-webkit-scrollbar-track {
-		background: var(--pico-card-sectioning-background-color);
-	}
-
-	.tokens-pane::-webkit-scrollbar-thumb {
-		border-radius: var(--pico-border-radius);
-		background-color: var(--pico-muted-color);
-	}
-
-	.tokens-pane::-webkit-scrollbar-thumb:hover {
-		background-color: var(--pico-muted-color);
 	}
 
 	.state {

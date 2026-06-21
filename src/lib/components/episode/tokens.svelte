@@ -7,6 +7,7 @@
 		selectedIndex: number | null;
 		hoveredIndex: number | null;
 		metricKey: string;
+		tokensHeight?: string;
 	}
 
 	type MetricValues = ArrayLike<number>;
@@ -15,10 +16,12 @@
 		episode,
 		selectedIndex = $bindable(null),
 		hoveredIndex = $bindable(null),
-		metricKey: metricKey
+		metricKey: metricKey,
+		tokensHeight = '18rem'
 	}: Props = $props();
 
 	let tokenElements = $state<HTMLElement[]>([]);
+	let scrollContainer = $state<HTMLDivElement | null>(null);
 	let metricValues = $derived(getMetricValues(episode, metricKey));
 	let metricRange = $derived(getMetricRange(metricValues));
 
@@ -88,6 +91,21 @@
 		}
 	}
 
+	function scrollTokenIntoTokenPane(tokenElement: HTMLElement) {
+		if (!scrollContainer) {
+			return;
+		}
+
+		const tokenRect = tokenElement.getBoundingClientRect();
+		const parentRect = scrollContainer.getBoundingClientRect();
+
+		if (tokenRect.top < parentRect.top) {
+			scrollContainer.scrollTop -= parentRect.top - tokenRect.top;
+		} else if (tokenRect.bottom > parentRect.bottom) {
+			scrollContainer.scrollTop += tokenRect.bottom - parentRect.bottom;
+		}
+	}
+
 	$effect(() => {
 		const index = selectedIndex;
 		const tokenCount = episode.tokens.length;
@@ -97,36 +115,48 @@
 		}
 
 		tick().then(() => {
-			tokenElements[index]?.scrollIntoView({
-				block: 'nearest',
-				inline: 'nearest'
-			});
+			const tokenElement = tokenElements[index];
+
+			if (tokenElement) {
+				scrollTokenIntoTokenPane(tokenElement);
+			}
 		});
 	});
 </script>
 
-<div class="tokens font-mono whitespace-pre-wrap leading-tight">
-	{#each episode.tokens as token, index}
-		<span
-			bind:this={tokenElements[index]}
-			tabindex="0"
-			role="button"
-			aria-pressed={selectedIndex === index}
-			class:hovered={hoveredIndex === index && selectedIndex !== index}
-			class:selected={selectedIndex === index}
-			style="--viz-token-color: {getHue(metricValues?.[index])};"
-			onclick={() => selectToken(index)}
-			onpointerenter={() => hoverToken(index)}
-			onpointerleave={() => hoverToken(null)}
-			onkeydown={(event) => handleKeydown(event, index)}>{getDisplayToken(token)}</span
-		>
-	{/each}
+<div bind:this={scrollContainer} class="tokens-pane" style="--tokens-height: {tokensHeight};">
+	<div class="tokens font-mono whitespace-pre-wrap leading-tight">
+		{#each episode.tokens as token, index}
+			<span
+				bind:this={tokenElements[index]}
+				tabindex="0"
+				role="button"
+				aria-pressed={selectedIndex === index}
+				class:hovered={hoveredIndex === index && selectedIndex !== index}
+				class:selected={selectedIndex === index}
+				style="--viz-token-color: {getHue(metricValues?.[index])};"
+				onclick={() => selectToken(index)}
+				onpointerenter={() => hoverToken(index)}
+				onpointerleave={() => hoverToken(null)}
+				onkeydown={(event) => handleKeydown(event, index)}>{getDisplayToken(token)}</span
+			>
+		{/each}
+	</div>
 </div>
 
 <style>
 	:root {
 		--background: oklch(1 0 0);
 		--foreground: oklch(0.145 0 0);
+	}
+
+	.tokens-pane {
+		max-height: var(--tokens-height);
+		overflow-y: scroll;
+		scrollbar-color: var(--pico-muted-color) var(--pico-card-sectioning-background-color);
+		scrollbar-gutter: stable;
+		scrollbar-width: auto;
+		padding: 0.75rem;
 	}
 
 	.tokens {
