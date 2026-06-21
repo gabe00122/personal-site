@@ -9,13 +9,15 @@
 	interface Props {
 		/** URL of a static episode JSON file (EncodedEpisode shape). */
 		url: string;
+		/** Optional title shown in the card header. */
+		title?: string;
 		/** Metric used for the initial token heatmap + graph. */
 		metric?: string;
 		/** Height of the scrollable token area. */
 		tokensHeight?: string;
 	}
 
-	let { url, metric = 'rewards', tokensHeight = '18rem' }: Props = $props();
+	let { url, title, metric = 'rewards', tokensHeight = '18rem' }: Props = $props();
 
 	let episode = $state<Episode | null>(null);
 	let loadError = $state(false);
@@ -47,12 +49,15 @@
 </script>
 
 <figure class="episode-viewer">
-	{#if loadError}
-		<div class="state">Could not load episode.</div>
-	{:else if episode === null}
-		<div class="state">Loading episode…</div>
-	{:else}
-		<div class="card">
+	<article class="episode-card">
+		{#if title}
+			<header class="episode-title">{title}</header>
+		{/if}
+		{#if loadError}
+			<div class="state">Could not load episode.</div>
+		{:else if episode === null}
+			<div class="state">Loading episode…</div>
+		{:else}
 			<div class="toolbar">
 				<label>
 					Show
@@ -70,8 +75,8 @@
 			<div class="tokens-pane" style="--tokens-height: {tokensHeight};">
 				<Tokens {episode} {metricKey} bind:selectedIndex bind:hoveredIndex />
 			</div>
-		</div>
-	{/if}
+		{/if}
+	</article>
 </figure>
 
 <style>
@@ -79,11 +84,15 @@
 		margin-block: var(--pico-block-spacing-vertical, 1rem);
 	}
 
-	.card {
-		border: 1px solid var(--pico-card-border-color, var(--pico-border-color));
-		border-radius: var(--pico-border-radius);
-		background: var(--pico-card-background-color, var(--pico-background-color));
+	.episode-card {
+		margin: 0;
+		padding: 0;
 		overflow: hidden;
+	}
+
+	.episode-title {
+		margin: 0;
+		border-bottom: 1px solid var(--pico-border-color);
 	}
 
 	.toolbar {
@@ -113,22 +122,40 @@
 	}
 
 	.graph-pane {
-		height: 6rem;
+		height: 7rem;
 		padding: 0.25rem 0.5rem;
-		border-bottom: 1px solid var(--pico-border-color);
+		border-bottom: 1px solid var(--pico-muted-border-color, var(--pico-border-color));
 	}
 
 	.tokens-pane {
 		max-height: var(--tokens-height);
-		overflow-y: auto;
+		overflow-y: scroll;
+		scrollbar-color: var(--pico-muted-color) var(--pico-card-sectioning-background-color);
+		scrollbar-gutter: stable;
+		scrollbar-width: auto;
 		padding: 0.75rem;
+	}
+
+	.tokens-pane::-webkit-scrollbar {
+		width: 0.75rem;
+	}
+
+	.tokens-pane::-webkit-scrollbar-track {
+		background: var(--pico-card-sectioning-background-color);
+	}
+
+	.tokens-pane::-webkit-scrollbar-thumb {
+		border-radius: var(--pico-border-radius);
+		background-color: var(--pico-muted-color);
+	}
+
+	.tokens-pane::-webkit-scrollbar-thumb:hover {
+		background-color: var(--pico-muted-color);
 	}
 
 	.state {
 		padding: 2rem;
 		text-align: center;
 		color: var(--pico-muted-color);
-		border: 1px solid var(--pico-border-color);
-		border-radius: var(--pico-border-radius);
 	}
 </style>

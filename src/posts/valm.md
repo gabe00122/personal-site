@@ -116,7 +116,7 @@ Things to prove:
 
 Each token below is colored by the selected metric, and the graph plots that metric across the rollout. Prompt tokens are dimmed so the model's own generations stand out. Click or hover a token (or the graph) to inspect its values.
 
-<EpisodeViewer url="/blog/valm/episode-378152.json" metric="log_probs" caption="A Wordle rollout, colored by the model's per-token log-probability." />
+<EpisodeViewer url="/blog/valm/episode-378152.json" metric="log_probs" title="A Wordle rollout, colored by the model's per-token log-probability." />
 
 # Technical tricks
 

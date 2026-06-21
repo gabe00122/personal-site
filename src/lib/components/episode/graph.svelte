@@ -135,6 +135,7 @@
 						lines={{ class: 'metric-hovered-focus-line' }}
 					/>
 				{/snippet}
+				{#snippet tooltip()}{/snippet}
 			</LineChart>
 		</div>
 	{/if}
@@ -214,15 +215,5 @@
 		stroke: var(--pico-color);
 		stroke-width: 1.5px;
 		stroke-dasharray: 4 4;
-	}
-
-	/* Tooltip popup (default layerchart tooltip is otherwise unstyled here). */
-	.metric-graph :global(.lc-tooltip) {
-		border-radius: var(--pico-border-radius);
-		border: 1px solid var(--pico-border-color);
-		background: var(--pico-card-background-color, var(--pico-background-color));
-		color: var(--pico-color);
-		font-size: 0.72rem;
-		padding: 0.25rem 0.45rem;
 	}
 </style>
