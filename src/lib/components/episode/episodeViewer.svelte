@@ -5,6 +5,7 @@
 	import Tokens from './tokens.svelte';
 	import Graph from './graph.svelte';
 	import TokenDetail from './tokenDetail.svelte';
+	import { metricOptionLabel } from './metricFormat';
 
 	interface Props {
 		/** URL of a static episode JSON file (EncodedEpisode shape). */
@@ -59,7 +60,7 @@
 					Show
 					<select bind:value={metricKey}>
 						{#each metricOptions as option (option)}
-							<option value={option}>{option}</option>
+							<option value={option}>{metricOptionLabel(option)}</option>
 						{/each}
 					</select>
 				</label>

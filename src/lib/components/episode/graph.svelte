@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Episode } from './types';
 	import { Highlight, LineChart, type ChartState } from 'layerchart';
+	import { metricDetailLabel } from './metricFormat';
 
 	interface Props {
 		episode: Episode;
@@ -34,7 +35,7 @@
 	let series = $derived([
 		{
 			key: 'value',
-			label: metricKey === 'none' ? 'Metric' : metricKey,
+			label: metricDetailLabel(metricKey),
 			color: 'var(--pico-primary)'
 		}
 	]);

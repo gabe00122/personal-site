@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Episode } from './types';
+	import { metricDetailLabel } from './metricFormat';
 
 	interface Props {
 		episode: Episode;
@@ -12,6 +13,10 @@
 
 	let activeIndex = $derived(hoveredIndex ?? selectedIndex);
 	let activeMetricValue = $derived(getMetricValue(activeIndex));
+	let activeMetricLabel = $derived(metricDetailLabel(metricKey));
+	let activeMetricDisplay = $derived(
+		activeIndex === null ? 'n/a' : formatMetricValue(activeMetricValue)
+	);
 
 	function getMetricValue(index: number | null) {
 		if (index === null || metricKey === 'none') {
@@ -33,25 +38,14 @@
 </script>
 
 <div class="token-detail">
-	{#if activeIndex === null}
-		<span>
-			<span class="label">Index</span>
-			<span class="value muted">n/a</span>
-		</span>
-		<span>
-			<span class="label">{metricKey === 'none' ? 'Metric' : metricKey}</span>
-			<span class="value muted">n/a</span>
-		</span>
-	{:else}
-		<span>
-			<span class="label">Index</span>
-			<span class="value">{activeIndex}</span>
-		</span>
-		<span>
-			<span class="label">{metricKey === 'none' ? 'Metric' : metricKey}</span>
-			<span class="value">{formatMetricValue(activeMetricValue)}</span>
-		</span>
-	{/if}
+	<span>
+		<span class="label">Index</span>
+		<span class="value" class:muted={activeIndex === null}>{activeIndex ?? 'n/a'}</span>
+	</span>
+	<span>
+		<span class="label">{activeMetricLabel}</span>
+		<span class="value" class:muted={activeIndex === null}>{activeMetricDisplay}</span>
+	</span>
 </div>
 
 <style>
@@ -72,5 +66,9 @@
 	.value {
 		font-family: var(--pico-font-family-monospace);
 		color: var(--pico-color);
+	}
+
+	.value.muted {
+		color: var(--pico-muted-color);
 	}
 </style>
