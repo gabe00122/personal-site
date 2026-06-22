@@ -73,8 +73,4 @@
 		font-family: var(--pico-font-family-monospace);
 		color: var(--pico-color);
 	}
-
-	.muted {
-		color: var(--pico-muted-color);
-	}
 </style>

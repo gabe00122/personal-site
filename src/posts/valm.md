@@ -128,17 +128,14 @@ Each token below is colored by the selected metric, and the graph plots that met
 
 ## Papers
 
-LST: Ladder Side-Tuning for Parameter and Memory-Efficient Transfer Learning
-https://arxiv.org/abs/2206.06522
-
-Does Representation Matter? Exploring Intermediate Layers in Large Language Models
-https://arxiv.org/html/2412.09563v1
-
-Stop Regressing: Training Value Functions via Classification for Scalable Deep RL
-https://arxiv.org/abs/2403.03950
-
-Your Language Model is Its Own Critic: Reinforcement Learning with Value Estimation from Actor's Internal States
-https://arxiv.org/abs/2605.07579
-
-GRPO
-https://arxiv.org/pdf/2402.03300
+- [LST: Ladder Side-Tuning for Parameter and Memory-Efficient Transfer Learning](https://arxiv.org/abs/2206.06522)
+- [Does Representation Matter? Exploring Intermediate Layers in Large Language Models](https://arxiv.org/html/2412.09563v1)
+- [Stop Regressing: Training Value Functions via Classification for Scalable Deep RL](https://arxiv.org/abs/2403.03950)
+- [Your Language Model is Its Own Critic: Reinforcement Learning with Value Estimation from Actor's Internal States](https://arxiv.org/abs/2605.07579)
+- [GRPO](https://arxiv.org/pdf/2402.03300)
+- [POISE](https://arxiv.org/pdf/2605.07579)
+- [DeepSeekMath](https://arxiv.org/pdf/2402.03300)
+- [What's Behind PPO's Collapse in Long-CoT?](https://arxiv.org/pdf/2503.01491)
+- [Learning Without Critics? Revisiting GRPO in Classical Reinforcement Learning Environments](https://arxiv.org/pdf/2511.03527)
+- [REINFORCE++: Stabilizing Critic-Free Policy Optimization with Global Advantage Normalization](https://arxiv.org/abs/2501.03262)
+- [Probing Hidden States for Calibrated, Alignment-Resistant Predictions in LLMs](https://www.medrxiv.org/content/10.1101/2025.09.17.25336018v1)
