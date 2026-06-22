@@ -59,15 +59,18 @@
 	}
 
 	function getYDomain(data: MetricDatum[]): [number, number] | undefined {
-		if (data.length === 0) {
-			return undefined;
-		}
-
-		let min = 10;
-		let max = -10;
+		let min = Infinity;
+		let max = -Infinity;
 		for (const { value } of data) {
+			if (!Number.isFinite(value)) {
+				continue;
+			}
 			min = Math.min(min, value);
 			max = Math.max(max, value);
+		}
+
+		if (min === Infinity) {
+			return undefined;
 		}
 
 		const span = max - min;
@@ -101,7 +104,12 @@
 		<!-- The chart's hover/click only mirror the keyboard-accessible token grid. -->
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="chart" onclick={selectDatum} onmousemove={updateHoverIndex}>
+		<div
+			class="chart"
+			onclick={selectDatum}
+			onmousemove={updateHoverIndex}
+			onmouseleave={() => (hoveredIndex = null)}
+		>
 			<LineChart
 				bind:context
 				data={chartData}

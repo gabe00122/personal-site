@@ -168,7 +168,7 @@
 	class="tokens-pane"
 	style="--tokens-height: {tokensHeight}; --viz-token-text-color: {tokenTextColor};"
 >
-	<div class="tokens font-mono whitespace-pre-wrap leading-tight">
+	<div class="tokens">
 		{#each episode.tokens as token, index}
 			<span
 				bind:this={tokenElements[index]}
@@ -188,11 +188,6 @@
 </div>
 
 <style>
-	:root {
-		--background: oklch(1 0 0);
-		--foreground: oklch(0.145 0 0);
-	}
-
 	.tokens-pane {
 		max-height: var(--tokens-height);
 		overflow-y: scroll;
@@ -200,13 +195,20 @@
 	}
 
 	.tokens {
-		line-height: 1.3;
+		line-height: 1.61;
 	}
 
 	.tokens span {
-		font: var(--pico-font-family-monospace);
+		font-family: var(--pico-font-family-monospace);
 
-		padding: unset;
+		/* Inline backgrounds only paint the glyph's content box, which is shorter
+		   than the line box, so adjacent rows show a gap. Vertical padding grows
+		   the background to fill the leading without shifting lines apart; `clone`
+		   applies it to every fragment of a span that wraps across lines. */
+		padding: 0.25em 0;
+		box-decoration-break: clone;
+		-webkit-box-decoration-break: clone;
+
 		border: unset;
 		border-radius: unset;
 		outline: unset;
@@ -219,22 +221,23 @@
 		cursor: pointer;
 	}
 
-	.tokens span:hover {
-		background-color: var(--foreground);
-		color: var(--background);
-	}
-
+	/* Hover/active: an accent ring that keeps the heatmap color visible. `inset`
+	   so it never bleeds into neighbouring tokens and stays flush with the grid. */
+	.tokens span:hover,
 	.tokens span.hovered {
-		background-color: var(--foreground);
-		color: var(--background);
+		box-shadow: inset 0 0 0 2px var(--pico-primary);
 	}
 
+	/* Selected: the committed token drives the detail panel + graph marker, so
+	   give it a solid accent fill with readable inverse text. Wins over hover via
+	   source order (equal specificity). */
 	.tokens span.selected {
-		background: color-mix(in srgb, var(--token-color) 45%, transparent);
+		background-color: var(--pico-primary);
+		color: var(--pico-primary-inverse);
 	}
 
 	.tokens span:focus-visible {
-		outline: 2px solid var(--token-color);
+		outline: 2px solid var(--pico-primary);
 		outline-offset: 2px;
 	}
 </style>
