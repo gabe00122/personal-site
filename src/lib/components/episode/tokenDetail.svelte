@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Episode } from './types';
 	import { metricDetailLabel } from './metricFormat';
+	import { getPolicyTokenMask, isMaskedPolicyToken } from './policyMask';
 
 	interface Props {
 		episode: Episode;
@@ -11,12 +12,21 @@
 
 	let { episode, metricKey, selectedIndex, hoveredIndex }: Props = $props();
 
-	let activeIndex = $derived(hoveredIndex ?? selectedIndex);
+	let policyTokenMask = $derived(getPolicyTokenMask(episode, metricKey));
+	let activeIndex = $derived(getActiveIndex(hoveredIndex ?? selectedIndex));
 	let activeMetricValue = $derived(getMetricValue(activeIndex));
 	let activeMetricLabel = $derived(metricDetailLabel(metricKey));
 	let activeMetricDisplay = $derived(
 		activeIndex === null ? 'n/a' : formatMetricValue(activeMetricValue)
 	);
+
+	function getActiveIndex(index: number | null) {
+		if (index === null || isMaskedPolicyToken(policyTokenMask, index)) {
+			return null;
+		}
+
+		return index;
+	}
 
 	function getMetricValue(index: number | null) {
 		if (index === null || metricKey === 'none') {

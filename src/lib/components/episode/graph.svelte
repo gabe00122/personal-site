@@ -2,6 +2,7 @@
 	import type { Episode } from './types';
 	import { Highlight, LineChart, type ChartState } from 'layerchart';
 	import { metricDetailLabel } from './metricFormat';
+	import { getPolicyTokenMask, isMaskedPolicyToken } from './policyMask';
 
 	interface Props {
 		episode: Episode;
@@ -12,7 +13,13 @@
 
 	type MetricDatum = {
 		index: number;
-		value: number;
+		value: number | null;
+		masked: boolean;
+	};
+
+	type MaskedRange = {
+		start: number;
+		end: number;
 	};
 
 	const Y_AXIS_TICK_COUNT = 4;
@@ -28,7 +35,17 @@
 	let metricValues = $derived(
 		metricKey === 'none' ? null : (episode.tokenMetrics[metricKey] ?? null)
 	);
-	let chartData = $derived(getChartData(metricValues));
+	let policyTokenMask = $derived(getPolicyTokenMask(episode, metricKey));
+	let chartData = $derived(getChartData(metricValues, policyTokenMask));
+	let maskedRanges = $derived(getMaskedRanges(chartData));
+	let maskedAnnotations = $derived(
+		maskedRanges.map(({ start, end }) => ({
+			type: 'range' as const,
+			layer: 'below' as const,
+			x: [start - 0.5, end + 0.5],
+			class: 'metric-masked-range'
+		}))
+	);
 	let yDomain = $derived(getYDomain(chartData));
 	let hoveredDatum = $derived(getDatum(hoveredIndex));
 	let selectedDatum = $derived(getDatum(selectedIndex));
@@ -40,30 +57,57 @@
 		}
 	]);
 
-	function getChartData(values: ArrayLike<number> | null): MetricDatum[] {
+	function getChartData(
+		values: ArrayLike<number> | null,
+		policyTokenMask: ArrayLike<number> | null
+	): MetricDatum[] {
 		if (values === null) {
 			return [];
 		}
 
 		const out: MetricDatum[] = [];
 		for (let i = 0; i < values.length; i++) {
-			out.push({ index: i, value: values[i] });
+			const masked = isMaskedPolicyToken(policyTokenMask, i);
+			const value = values[i];
+			out.push({ index: i, value: masked || !Number.isFinite(value) ? null : value, masked });
 		}
 		return out;
+	}
+
+	function getMaskedRanges(data: MetricDatum[]): MaskedRange[] {
+		const ranges: MaskedRange[] = [];
+		let start: number | null = null;
+
+		for (let i = 0; i < data.length; i++) {
+			if (data[i].masked) {
+				start ??= data[i].index;
+			} else if (start !== null) {
+				ranges.push({ start, end: data[i - 1].index });
+				start = null;
+			}
+		}
+
+		if (start !== null && data.length > 0) {
+			ranges.push({ start, end: data[data.length - 1].index });
+		}
+
+		return ranges;
 	}
 
 	function getDatum(index: number | null) {
 		if (index === null) {
 			return undefined;
 		}
-		return chartData[index];
+
+		const datum = chartData[index];
+		return datum && !datum.masked ? datum : undefined;
 	}
 
 	function getYDomain(data: MetricDatum[]): [number, number] | undefined {
 		let min = Infinity;
 		let max = -Infinity;
 		for (const { value } of data) {
-			if (!Number.isFinite(value)) {
+			if (value === null || !Number.isFinite(value)) {
 				continue;
 			}
 			min = Math.min(min, value);
@@ -80,7 +124,11 @@
 	}
 
 	function tooltipIndex() {
-		return (context?.tooltipState.data as Partial<MetricDatum> | null)?.index ?? null;
+		const index = (context?.tooltipState.data as Partial<MetricDatum> | null)?.index ?? null;
+		if (typeof index !== 'number' || chartData[index]?.masked) {
+			return null;
+		}
+		return index;
 	}
 
 	function updateHoverIndex() {
@@ -119,6 +167,7 @@
 				{yDomain}
 				{series}
 				padding={{ top: 0, right: 8, bottom: 24, left: 35 }}
+				annotations={maskedAnnotations}
 				props={{
 					grid: { yTicks: Y_AXIS_TICK_COUNT },
 					yAxis: {
@@ -212,6 +261,12 @@
 
 	.metric-graph :global(.lc-highlight-line) {
 		stroke-width: 0;
+	}
+
+	.metric-graph :global(.metric-masked-range) {
+		fill: var(--pico-muted-border-color, var(--pico-border-color));
+		opacity: 0.55;
+		pointer-events: none;
 	}
 
 	.metric-graph :global(.metric-selected-focus-line) {

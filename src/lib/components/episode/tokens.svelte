@@ -2,6 +2,7 @@
 	import { tick } from 'svelte';
 	import { darkColor, lightColor, theme } from '$lib/theme';
 	import type { Episode } from './types';
+	import { getPolicyTokenMask, isMaskedPolicyToken } from './policyMask';
 
 	interface Props {
 		episode: Episode;
@@ -42,6 +43,7 @@
 	let colorTheme = $derived<Theme>($theme === 'light' ? 'light' : 'dark');
 	let tokenTextColor = $derived(colorTheme === 'dark' ? darkColor : lightColor);
 	let metricValues = $derived(getMetricValues(episode, metricKey));
+	let policyTokenMask = $derived(getPolicyTokenMask(episode, metricKey));
 	let metricRange = $derived(getMetricRange(metricValues));
 
 	const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -64,6 +66,10 @@
 		let max = -Infinity;
 
 		for (let i = 0; i < values.length; i++) {
+			if (tokenIsMasked(i)) {
+				continue;
+			}
+
 			const value = values[i];
 
 			if (!Number.isFinite(value)) {
@@ -99,8 +105,14 @@
 		return `oklch(${lerp(colorRamp.l0, colorRamp.l1, magnitude)} ${colorRamp.c1 * magnitude} ${scaledValue >= 0 ? HUE_POS : HUE_NEG})`;
 	}
 
-	function getTokenColor(value: number | undefined) {
-		if (value === undefined || !Number.isFinite(value) || metricRange === null) {
+	function getTokenColor(index: number) {
+		const value = metricValues?.[index];
+		if (
+			tokenIsMasked(index) ||
+			value === undefined ||
+			!Number.isFinite(value) ||
+			metricRange === null
+		) {
 			return 'transparent';
 		}
 
@@ -111,11 +123,23 @@
 		return sequentialColor(value, metricRange.min, metricRange.max, colorTheme);
 	}
 
+	function tokenIsMasked(index: number) {
+		return isMaskedPolicyToken(policyTokenMask, index);
+	}
+
 	function selectToken(index: number) {
+		if (tokenIsMasked(index)) {
+			return;
+		}
+
 		selectedIndex = selectedIndex === index ? null : index;
 	}
 
 	function hoverToken(index: number | null) {
+		if (index !== null && tokenIsMasked(index)) {
+			return;
+		}
+
 		hoveredIndex = index;
 	}
 
@@ -124,6 +148,10 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent, index: number) {
+		if (tokenIsMasked(index)) {
+			return;
+		}
+
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
 			selectToken(index);
@@ -170,14 +198,17 @@
 >
 	<div class="tokens">
 		{#each episode.tokens as token, index}
+			{@const masked = tokenIsMasked(index)}
 			<span
 				bind:this={tokenElements[index]}
-				tabindex="0"
+				tabindex={masked ? -1 : 0}
 				role="button"
-				aria-pressed={selectedIndex === index}
-				class:hovered={hoveredIndex === index && selectedIndex !== index}
-				class:selected={selectedIndex === index}
-				style="--viz-token-color: {getTokenColor(metricValues?.[index])};"
+				aria-disabled={masked}
+				aria-pressed={masked ? undefined : selectedIndex === index}
+				class:hovered={!masked && hoveredIndex === index && selectedIndex !== index}
+				class:selected={!masked && selectedIndex === index}
+				class:masked
+				style="--viz-token-color: {getTokenColor(index)};"
 				onclick={() => selectToken(index)}
 				onpointerenter={() => hoverToken(index)}
 				onpointerleave={() => hoverToken(null)}
@@ -226,6 +257,15 @@
 	.tokens span:hover,
 	.tokens span.hovered {
 		box-shadow: inset 0 0 0 2px var(--pico-primary);
+	}
+
+	.tokens span.masked {
+		cursor: default;
+	}
+
+	.tokens span.masked:hover,
+	.tokens span.masked.hovered {
+		box-shadow: unset;
 	}
 
 	/* Selected: the committed token drives the detail panel + graph marker, so

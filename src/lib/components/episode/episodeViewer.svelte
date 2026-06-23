@@ -6,6 +6,7 @@
 	import Graph from './graph.svelte';
 	import TokenDetail from './tokenDetail.svelte';
 	import { metricOptionLabel } from './metricFormat';
+	import { firstUnmaskedPolicyToken, getPolicyTokenMask, isMaskedPolicyToken } from './policyMask';
 
 	interface Props {
 		/** URL of a static episode JSON file (EncodedEpisode shape). */
@@ -27,6 +28,7 @@
 	let hoveredIndex = $state<number | null>(null);
 
 	let metricOptions = $derived(episode ? ['none', ...Object.keys(episode.tokenMetrics)] : ['none']);
+	let policyTokenMask = $derived(episode ? getPolicyTokenMask(episode, metricKey) : null);
 
 	onMount(async () => {
 		try {
@@ -41,6 +43,31 @@
 		} catch (error) {
 			console.error(error);
 			loadError = true;
+		}
+	});
+
+	$effect(() => {
+		if (episode === null) {
+			return;
+		}
+
+		const tokenCount = episode.tokens.length;
+		if (selectedIndex !== null && (selectedIndex < 0 || selectedIndex >= tokenCount)) {
+			selectedIndex = null;
+		}
+		if (hoveredIndex !== null && (hoveredIndex < 0 || hoveredIndex >= tokenCount)) {
+			hoveredIndex = null;
+		}
+
+		if (policyTokenMask === null) {
+			return;
+		}
+
+		if (selectedIndex !== null && isMaskedPolicyToken(policyTokenMask, selectedIndex)) {
+			selectedIndex = firstUnmaskedPolicyToken(policyTokenMask, tokenCount);
+		}
+		if (hoveredIndex !== null && isMaskedPolicyToken(policyTokenMask, hoveredIndex)) {
+			hoveredIndex = null;
 		}
 	});
 </script>
