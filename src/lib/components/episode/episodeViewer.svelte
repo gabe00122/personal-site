@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { untrack } from 'svelte';
 	import { decodeEpisode } from './decode';
 	import type { Episode } from './types';
 	import Tokens from './tokens.svelte';
@@ -8,42 +8,107 @@
 	import { metricOptionLabel } from './metricFormat';
 	import { firstUnmaskedPolicyToken, getPolicyTokenMask, isMaskedPolicyToken } from './policyMask';
 
-	interface Props {
+	interface EpisodeTab {
 		/** URL of a static episode JSON file (EncodedEpisode shape). */
 		url: string;
-		/** Optional title shown in the card header. */
+		/** Label shown on the tab. */
+		label: string;
+	}
+
+	interface Props {
+		/** URL of a single static episode JSON file (EncodedEpisode shape). */
+		url?: string;
+		/** Label for the single-episode tab. */
 		title?: string;
+		/** Multiple episodes, each shown as a clickable tab. */
+		episodes?: EpisodeTab[];
 		/** Metric used for the initial token heatmap + graph. */
 		metric?: string;
 		/** Height of the scrollable token area. */
 		tokensHeight?: string;
 	}
 
-	let { url, title, metric = 'rewards', tokensHeight = '18rem' }: Props = $props();
+	let { url, title, episodes, metric = 'rewards', tokensHeight = '18rem' }: Props = $props();
 
+	let tabs = $derived<EpisodeTab[]>(
+		episodes && episodes.length > 0 ? episodes : url ? [{ url, label: title ?? '' }] : []
+	);
+	let showTabs = $derived(tabs.length > 1 || (tabs.length === 1 && tabs[0].label !== ''));
+
+	let activeTab = $state(0);
 	let episode = $state<Episode | null>(null);
 	let loadError = $state(false);
 	let metricKey = $state('none');
 	let selectedIndex = $state<number | null>(null);
 	let hoveredIndex = $state<number | null>(null);
+	// Tracks whether any episode has loaded yet; the first one defaults to the `metric` prop.
+	let metricInitialized = false;
 
 	let metricOptions = $derived(episode ? ['none', ...Object.keys(episode.tokenMetrics)] : ['none']);
 	let policyTokenMask = $derived(episode ? getPolicyTokenMask(episode, metricKey) : null);
 
-	onMount(async () => {
+	const cache = new Map<string, Episode>();
+	let loadToken = 0;
+
+	function resolveMetric(decoded: Episode, preferred: string): string {
+		if (preferred === 'none' || preferred in decoded.tokenMetrics) {
+			return preferred;
+		}
+		if (metric in decoded.tokenMetrics) {
+			return metric;
+		}
+		return 'none';
+	}
+
+	function applyEpisode(decoded: Episode) {
+		const preferred = metricInitialized ? metricKey : metric;
+		metricInitialized = true;
+		metricKey = resolveMetric(decoded, preferred);
+		selectedIndex = 0;
+		hoveredIndex = null;
+		episode = decoded;
+	}
+
+	async function loadEpisode(tab: EpisodeTab) {
+		const token = ++loadToken;
+
+		const cached = cache.get(tab.url);
+		if (cached) {
+			loadError = false;
+			applyEpisode(cached);
+			return;
+		}
+
+		episode = null;
+		loadError = false;
+
 		try {
-			const response = await fetch(url);
+			const response = await fetch(tab.url);
 			if (!response.ok) {
 				throw new Error(`Failed to load episode: ${response.status}`);
 			}
 			const decoded = decodeEpisode(await response.json());
-			metricKey = metric in decoded.tokenMetrics ? metric : 'none';
-			selectedIndex = 0;
-			episode = decoded;
+			cache.set(tab.url, decoded);
+			if (token !== loadToken) {
+				return;
+			}
+			applyEpisode(decoded);
 		} catch (error) {
+			if (token !== loadToken) {
+				return;
+			}
 			console.error(error);
 			loadError = true;
 		}
+	}
+
+	// Load the active tab's episode whenever the selection (or the tab list) changes.
+	$effect(() => {
+		const tab = tabs[activeTab];
+		if (!tab) {
+			return;
+		}
+		untrack(() => loadEpisode(tab));
 	});
 
 	$effect(() => {
@@ -74,8 +139,21 @@
 
 <figure class="episode-viewer">
 	<article class="episode-card">
-		{#if title}
-			<header class="episode-title">{title}</header>
+		{#if showTabs}
+			<div class="episode-tabs" role="tablist">
+				{#each tabs as tab, index (tab.url)}
+					<button
+						type="button"
+						role="tab"
+						class="episode-tab"
+						class:selected={index === activeTab}
+						aria-selected={index === activeTab}
+						onclick={() => (activeTab = index)}
+					>
+						{tab.label || `Episode ${index + 1}`}
+					</button>
+				{/each}
+			</div>
 		{/if}
 		{#if loadError}
 			<div class="state">Could not load episode.</div>
@@ -112,9 +190,51 @@
 		overflow: hidden;
 	}
 
-	.episode-title {
-		margin: 0;
+	.episode-tabs {
+		display: flex;
+		overflow-x: auto;
 		border-bottom: 1px solid var(--pico-border-color);
+	}
+
+	.episode-tab {
+		/* Pico styles a bare <button> as a filled primary button, which locally
+		   redefines --pico-color (to the inverse text color, #000 in dark mode).
+		   Reset it so var(--pico-color) below resolves to the themed page text. */
+		--pico-color: inherit;
+		--pico-background-color: transparent;
+		box-shadow: none;
+		flex: 0 0 auto;
+		width: auto;
+		margin: 0;
+		padding: 0.5rem 0.9rem;
+		border: none;
+		border-bottom: 2px solid transparent;
+		border-radius: 0;
+		background: transparent;
+		color: var(--pico-muted-color);
+		font-size: 0.8rem;
+		font-weight: 500;
+		white-space: nowrap;
+		cursor: pointer;
+		transition:
+			color 0.15s ease,
+			border-color 0.15s ease,
+			background 0.15s ease;
+	}
+
+	.episode-tab:hover {
+		color: var(--pico-color);
+		background: color-mix(in srgb, var(--pico-color) 7%, transparent);
+	}
+
+	.episode-tab.selected {
+		color: var(--pico-primary);
+		border-bottom-color: var(--pico-primary);
+		background: color-mix(in srgb, var(--pico-primary) 10%, transparent);
+	}
+
+	.episode-tab.selected:hover {
+		background: color-mix(in srgb, var(--pico-primary) 16%, transparent);
 	}
 
 	.toolbar {
