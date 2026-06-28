@@ -9,6 +9,7 @@ published: true
 <script>
     import Image from "$lib/components/image.svelte";
     import EpisodeViewer from "$lib/components/episode/episodeViewer.svelte";
+    import ArchitectureDiagram from "$lib/components/valmArchitecture.svelte";
 </script>
 
 # Introduction
@@ -35,46 +36,23 @@ This is why I designed the value network as a separate, parallel, ladder-style t
 
 This is effectively ladder side tuning with respect to the value function and lora training with respect to the policy.
 
-```
- Last Token Embedding                     Last Reward
-     |                                        |
-     |----------------------|                 |
-     |                 Value Encode           |
-     v                      |                 |
-  Base Layer 1              +<--Reward Encode--
-     |                      |
-     |                      v
-     |--Value Encode-->Value Layer 1
-     v                      |
-  Base Layer 2              |
-     |                      |
-     |                      |
-     |                      |
-     v                      |
-  Base Layer 3              |
-     |                      |
-     |   (taken every n)    v
-     |--Value Encode-->Value Layer 2
-     v                      |
-  Base Layer 4              |
-     |                      |
-  Token Decode         Value Prediction
+<ArchitectureDiagram />
 
+The two streams are:
 
-Base Layer:
-Qwen3 layer with a LoRA adapter
+**Base layer** — a Qwen3 layer with a LoRA adapter. Stacked together these form the policy, with the residual stream running from the token embedding up to the token prediction.
 
-Value Layer:
-Scaled-down version of the Qwen3 architecture with its own attention layers
+**Value layer** — a scaled-down version of the Qwen3 architecture with its own attention layers. These form the parallel value network, running from the last reward up to the value prediction.
 
-Value Encode:
+**Value encode** — every n-th base latent is projected into the value stream through a stop-gradient SwiGLU block, so gradients from the value loss never flow back into the base model:
+
+```python
 x = jax.lax.stop_gradient(x)
 x = self._normalize(x)
 gate = self._up_gate(x)
 x = self._encode_up(x)
 x = jax.nn.silu(x) * gate
 x = self._encode_down(x)
-
 ```
 
 I use a swiglu style mlp block with normalization so the value network can selectively filter latents from the base model into it's residual stream.
@@ -144,6 +122,9 @@ Test MSE over HL gauss
 ## Episode viewer
 
 <EpisodeViewer url="/blog/valm/episode-378152.json" metric="value" title="A Wordle rollout." />
+
+## Related works
+POISE
 
 ## Next steps
 
