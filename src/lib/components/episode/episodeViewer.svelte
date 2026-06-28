@@ -158,7 +158,7 @@
 		{#if loadError}
 			<div class="state">Could not load episode.</div>
 		{:else if episode === null}
-			<div class="state">Loading episode…</div>
+			<div class="state loading-state" style="--tokens-height: {tokensHeight};">Loading episode…</div>
 		{:else}
 			<div class="toolbar">
 				<label>
@@ -188,6 +188,8 @@
 		margin: 0;
 		padding: 0;
 		overflow: hidden;
+		--episode-graph-height: 7rem;
+		--episode-toolbar-height: 2.5rem;
 	}
 
 	.episode-tabs {
@@ -245,6 +247,7 @@
 		padding: 0.5rem 0.75rem;
 		border-bottom: 1px solid var(--pico-border-color);
 		font-size: 0.8rem;
+		min-height: var(--episode-toolbar-height);
 	}
 
 	.toolbar label {
@@ -264,7 +267,7 @@
 	}
 
 	.graph-pane {
-		height: 7rem;
+		height: var(--episode-graph-height);
 		padding: 0.25rem 0.5rem;
 		border-bottom: 1px solid var(--pico-muted-border-color, var(--pico-border-color));
 	}
@@ -274,4 +277,12 @@
 		text-align: center;
 		color: var(--pico-muted-color);
 	}
+	.loading-state {
+		display: flex;
+		box-sizing: border-box;
+		min-height: calc(var(--episode-toolbar-height) + var(--episode-graph-height) + var(--tokens-height));
+		align-items: center;
+		justify-content: center;
+	}
+
 </style>
