@@ -135,7 +135,14 @@
 		hoveredIndex = tooltipIndex();
 	}
 
-	function selectDatum() {
+	// Selection happens on pointerup rather than click: on touch devices the
+	// pointer "leaves" when the finger lifts, so layerchart clears its tooltip
+	// data before the compatibility click event fires. pointerup is spec-ordered
+	// before pointerleave, so the tooltip data is still populated here.
+	function selectDatum(event: PointerEvent) {
+		if (event.button !== 0) {
+			return;
+		}
 		const index = tooltipIndex();
 		if (typeof index !== 'number') {
 			return;
@@ -150,14 +157,13 @@
 	{:else if chartData.length === 0}
 		<div class="empty">No metric data</div>
 	{:else}
-		<!-- The chart's hover/click only mirror the keyboard-accessible token grid. -->
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- The chart's hover/tap only mirror the keyboard-accessible token grid. -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="chart"
-			onclick={selectDatum}
-			onmousemove={updateHoverIndex}
-			onmouseleave={() => (hoveredIndex = null)}
+			onpointerup={selectDatum}
+			onpointermove={updateHoverIndex}
+			onpointerleave={() => (hoveredIndex = null)}
 		>
 			<LineChart
 				bind:context
