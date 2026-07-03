@@ -9,8 +9,9 @@
 			'from the token embedding up to the token prediction. A scaled-down transformer with fewer ' +
 			'layers runs alongside as the value network, fed by the token embedding and the last reward ' +
 			'— the reward never enters the policy. The token embedding and every n-th base latent are ' +
-			'projected into the value stream through SwiGLU value-encode blocks; the ⫽ marks are ' +
-			'stop-gradients, so the policy and value gradients never cross.'
+			'projected into the value stream through SwiGLU value-encode blocks. The value gradient ' +
+			'trains the encode blocks but stops at the ⫽ stop-gradient marks, so the policy and value ' +
+			'gradients never cross.'
 	}: Props = $props();
 </script>
 
@@ -28,7 +29,8 @@
 			value-encode block into a value layer; a stop-gradient mark on each tap shows that value
 			gradients cannot flow back into the base model. Green arrows show the policy gradient
 			flowing back down the base stack; red arrows show the value gradient flowing back down the
-			value stack. The two backward streams never cross."
+			value stack and into each value-encode block, where it stops at the stop-gradient mark
+			before reaching the base model. The two backward streams never cross."
 		xmlns="http://www.w3.org/2000/svg"
 	>
 		<defs>
@@ -63,12 +65,12 @@
 			<line x1="430" y1="192" x2="430" y2="54" marker-end="url(#arch-arrow)" />
 
 			<!-- taps: every 2nd base latent -> value encode -> value layer -->
-			<line x1="180" y1="215" x2="376" y2="215" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="407" x2="376" y2="407" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="599" x2="376" y2="599" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="209" x2="376" y2="209" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="401" x2="376" y2="401" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="593" x2="376" y2="593" marker-end="url(#arch-arrow)" />
 
 			<!-- token embedding feeds the value net (and, separately, the policy above) -->
-			<line x1="180" y1="726" x2="426" y2="726" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="720" x2="426" y2="720" marker-end="url(#arch-arrow)" />
 			<!-- last reward feeds only the value net -->
 			<path d="M490,758 L490,700 L434,700" fill="none" marker-end="url(#arch-arrow)" />
 		</g>
@@ -88,27 +90,33 @@
 			<line x1="410" y1="54" x2="410" y2="188" marker-end="url(#arch-arrow)" />
 			<line x1="410" y1="238" x2="410" y2="380" marker-end="url(#arch-arrow)" />
 			<line x1="410" y1="430" x2="410" y2="572" marker-end="url(#arch-arrow)" />
+
+			<!-- value gradient feeds into (but not through) each value-encode block -->
+			<line x1="380" y1="221" x2="338" y2="221" marker-end="url(#arch-arrow)" />
+			<line x1="380" y1="413" x2="338" y2="413" marker-end="url(#arch-arrow)" />
+			<line x1="380" y1="605" x2="338" y2="605" marker-end="url(#arch-arrow)" />
+			<path d="M410,622 L410,732 L338,732" fill="none" marker-end="url(#arch-arrow)" />
 		</g>
 
 		<!-- stop-gradient marks on the taps -->
 		<g class="sg">
-			<line x1="214" y1="223" x2="222" y2="207" />
-			<line x1="223" y1="223" x2="231" y2="207" />
-			<line x1="214" y1="415" x2="222" y2="399" />
-			<line x1="223" y1="415" x2="231" y2="399" />
-			<line x1="214" y1="607" x2="222" y2="591" />
-			<line x1="223" y1="607" x2="231" y2="591" />
-			<line x1="214" y1="734" x2="222" y2="718" />
-			<line x1="223" y1="734" x2="231" y2="718" />
+			<line x1="214" y1="217" x2="222" y2="201" />
+			<line x1="223" y1="217" x2="231" y2="201" />
+			<line x1="214" y1="409" x2="222" y2="393" />
+			<line x1="223" y1="409" x2="231" y2="393" />
+			<line x1="214" y1="601" x2="222" y2="585" />
+			<line x1="223" y1="601" x2="231" y2="585" />
+			<line x1="214" y1="728" x2="222" y2="712" />
+			<line x1="223" y1="728" x2="231" y2="712" />
 		</g>
 
 		<!-- forward junction dots -->
 		<g class="junction">
-			<circle cx="180" cy="215" r="3.5" />
-			<circle cx="180" cy="407" r="3.5" />
-			<circle cx="180" cy="599" r="3.5" />
-			<circle cx="180" cy="726" r="3.5" />
-			<circle cx="430" cy="726" r="3.5" />
+			<circle cx="180" cy="209" r="3.5" />
+			<circle cx="180" cy="401" r="3.5" />
+			<circle cx="180" cy="593" r="3.5" />
+			<circle cx="180" cy="720" r="3.5" />
+			<circle cx="430" cy="720" r="3.5" />
 			<circle cx="430" cy="700" r="3.5" />
 		</g>
 
@@ -239,7 +247,8 @@
 	.fwd line,
 	.fwd path,
 	.bwd-policy line,
-	.bwd-value line {
+	.bwd-value line,
+	.bwd-value path {
 		stroke-width: 2;
 		fill: none;
 	}
@@ -253,7 +262,8 @@
 		stroke: var(--base);
 	}
 
-	.bwd-value line {
+	.bwd-value line,
+	.bwd-value path {
 		stroke: var(--value);
 	}
 
