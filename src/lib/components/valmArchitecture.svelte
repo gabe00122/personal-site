@@ -18,19 +18,18 @@
 <figure class="arch-figure">
 	<svg
 		class="arch"
-		viewBox="0 0 560 810"
+		viewBox="0 0 560 730"
 		role="img"
 		aria-label="A ladder value network running parallel to the Qwen3 base model. Grey arrows show
 			the forward pass flowing up: the token embedding flows up through a stack of six base layers,
-			each a frozen Qwen3 block with a LoRA adapter, to the token prediction. The token embedding, tapped through
-			its own stop-gradient value-encode block, and the last reward together feed a parallel
-			value stream of three smaller value layers
-			ending in the value prediction. The output of every second base layer is tapped through a
-			value-encode block into a value layer; a stop-gradient mark on each tap shows that value
-			gradients cannot flow back into the base model. Green arrows show the policy gradient
-			flowing back down the base stack; red arrows show the value gradient flowing back down the
-			value stack and into each value-encode block, where it stops at the stop-gradient mark
-			before reaching the base model. The two backward streams never cross."
+			each a frozen Qwen3 block with a LoRA adapter, to the token prediction. The token embedding,
+			tapped through its own stop-gradient value-encode block, and the last reward together feed a
+			parallel value stream of three smaller value layers ending in the value prediction. The
+			output of every second base layer is tapped through a value-encode block into a value layer.
+			Green arrows show the policy gradient flowing back down the base stack; red arrows show the
+			value gradient flowing back down the value stack and into each value-encode block, where it
+			stops at the stop-gradient mark before reaching the base model. The two backward streams
+			never cross."
 		xmlns="http://www.w3.org/2000/svg"
 	>
 		<defs>
@@ -50,136 +49,117 @@
 		<!-- ───── forward pass (grey, flows up) ───── -->
 		<g class="fwd">
 			<!-- base residual stream -->
-			<line x1="180" y1="758" x2="180" y2="678" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="620" x2="180" y2="582" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="524" x2="180" y2="486" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="428" x2="180" y2="390" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="332" x2="180" y2="294" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="236" x2="180" y2="198" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="140" x2="180" y2="54" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="680" x2="180" y2="612" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="560" x2="180" y2="524" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="472" x2="180" y2="436" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="384" x2="180" y2="348" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="296" x2="180" y2="260" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="208" x2="180" y2="172" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="120" x2="180" y2="54" marker-end="url(#arch-arrow)" />
 
 			<!-- value residual stream (bottom segment rises from the input merge) -->
-			<line x1="430" y1="726" x2="430" y2="626" marker-end="url(#arch-arrow)" />
-			<line x1="430" y1="576" x2="430" y2="434" marker-end="url(#arch-arrow)" />
-			<line x1="430" y1="384" x2="430" y2="242" marker-end="url(#arch-arrow)" />
-			<line x1="430" y1="192" x2="430" y2="54" marker-end="url(#arch-arrow)" />
+			<line x1="430" y1="642" x2="430" y2="564" marker-end="url(#arch-arrow)" />
+			<line x1="430" y1="520" x2="430" y2="388" marker-end="url(#arch-arrow)" />
+			<line x1="430" y1="344" x2="430" y2="212" marker-end="url(#arch-arrow)" />
+			<line x1="430" y1="168" x2="430" y2="54" marker-end="url(#arch-arrow)" />
 
 			<!-- taps: every 2nd base latent -> value encode -> value layer -->
-			<line x1="180" y1="209" x2="376" y2="209" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="401" x2="376" y2="401" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="593" x2="376" y2="593" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="182" x2="376" y2="182" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="358" x2="376" y2="358" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="534" x2="376" y2="534" marker-end="url(#arch-arrow)" />
 
 			<!-- token embedding feeds the value net (and, separately, the policy above) -->
-			<line x1="180" y1="720" x2="426" y2="720" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="642" x2="426" y2="642" marker-end="url(#arch-arrow)" />
 			<!-- last reward feeds only the value net -->
-			<path d="M490,758 L490,700 L434,700" fill="none" marker-end="url(#arch-arrow)" />
+			<path d="M490,684 L490,622 L434,622" fill="none" marker-end="url(#arch-arrow)" />
 		</g>
 
 		<!-- ───── policy backward pass (green, flows down the base stream) ───── -->
 		<g class="bwd-policy">
-			<line x1="160" y1="54" x2="160" y2="136" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="194" x2="160" y2="232" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="290" x2="160" y2="328" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="386" x2="160" y2="424" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="482" x2="160" y2="520" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="578" x2="160" y2="616" marker-end="url(#arch-arrow)" />
+			<line x1="160" y1="54" x2="160" y2="116" marker-end="url(#arch-arrow)" />
+			<line x1="160" y1="168" x2="160" y2="204" marker-end="url(#arch-arrow)" />
+			<line x1="160" y1="256" x2="160" y2="292" marker-end="url(#arch-arrow)" />
+			<line x1="160" y1="344" x2="160" y2="380" marker-end="url(#arch-arrow)" />
+			<line x1="160" y1="432" x2="160" y2="468" marker-end="url(#arch-arrow)" />
+			<line x1="160" y1="520" x2="160" y2="556" marker-end="url(#arch-arrow)" />
 		</g>
 
 		<!-- ───── value backward pass (red, flows down the value stream) ───── -->
 		<g class="bwd-value">
-			<line x1="410" y1="54" x2="410" y2="188" marker-end="url(#arch-arrow)" />
-			<line x1="410" y1="238" x2="410" y2="380" marker-end="url(#arch-arrow)" />
-			<line x1="410" y1="430" x2="410" y2="572" marker-end="url(#arch-arrow)" />
+			<line x1="410" y1="54" x2="410" y2="164" marker-end="url(#arch-arrow)" />
+			<line x1="410" y1="208" x2="410" y2="340" marker-end="url(#arch-arrow)" />
+			<line x1="410" y1="384" x2="410" y2="516" marker-end="url(#arch-arrow)" />
 
 			<!-- value gradient feeds into (but not through) each value-encode block -->
-			<line x1="380" y1="221" x2="338" y2="221" marker-end="url(#arch-arrow)" />
-			<line x1="380" y1="413" x2="338" y2="413" marker-end="url(#arch-arrow)" />
-			<line x1="380" y1="605" x2="338" y2="605" marker-end="url(#arch-arrow)" />
-			<path d="M410,622 L410,732 L338,732" fill="none" marker-end="url(#arch-arrow)" />
+			<line x1="380" y1="194" x2="326" y2="194" marker-end="url(#arch-arrow)" />
+			<line x1="380" y1="370" x2="326" y2="370" marker-end="url(#arch-arrow)" />
+			<line x1="380" y1="546" x2="326" y2="546" marker-end="url(#arch-arrow)" />
+			<path d="M410,560 L410,654 L326,654" fill="none" marker-end="url(#arch-arrow)" />
 		</g>
 
 		<!-- stop-gradient marks on the taps -->
 		<g class="sg">
-			<line x1="214" y1="217" x2="222" y2="201" />
-			<line x1="223" y1="217" x2="231" y2="201" />
-			<line x1="214" y1="409" x2="222" y2="393" />
-			<line x1="223" y1="409" x2="231" y2="393" />
-			<line x1="214" y1="601" x2="222" y2="585" />
-			<line x1="223" y1="601" x2="231" y2="585" />
-			<line x1="214" y1="728" x2="222" y2="712" />
-			<line x1="223" y1="728" x2="231" y2="712" />
-		</g>
-
-		<!-- forward junction dots -->
-		<g class="junction">
-			<circle cx="180" cy="209" r="3.5" />
-			<circle cx="180" cy="401" r="3.5" />
-			<circle cx="180" cy="593" r="3.5" />
-			<circle cx="180" cy="720" r="3.5" />
-			<circle cx="430" cy="720" r="3.5" />
-			<circle cx="430" cy="700" r="3.5" />
+			<line x1="211" y1="190" x2="219" y2="174" />
+			<line x1="220" y1="190" x2="228" y2="174" />
+			<line x1="211" y1="366" x2="219" y2="350" />
+			<line x1="220" y1="366" x2="228" y2="350" />
+			<line x1="211" y1="542" x2="219" y2="526" />
+			<line x1="220" y1="542" x2="228" y2="526" />
+			<line x1="211" y1="650" x2="219" y2="634" />
+			<line x1="220" y1="650" x2="228" y2="634" />
 		</g>
 
 		<!-- ───── base layers (green boxes) ───── -->
 		<g class="box base">
-			<rect x="105" y="140" width="150" height="54" rx="12" />
-			<rect x="105" y="236" width="150" height="54" rx="12" />
-			<rect x="105" y="332" width="150" height="54" rx="12" />
-			<rect x="105" y="428" width="150" height="54" rx="12" />
-			<rect x="105" y="524" width="150" height="54" rx="12" />
-			<rect x="105" y="620" width="150" height="54" rx="12" />
-		</g>
-		<g class="box-label">
-			<text x="180" y="160">Base layer</text>
-			<text x="180" y="256">Base layer</text>
-			<text x="180" y="352">Base layer</text>
-			<text x="180" y="448">Base layer</text>
-			<text x="180" y="544">Base layer</text>
-			<text x="180" y="640">Base layer</text>
-		</g>
-		<g class="box-sublabel">
-			<text x="180" y="181">frozen + LoRA</text>
-			<text x="180" y="277">frozen + LoRA</text>
-			<text x="180" y="373">frozen + LoRA</text>
-			<text x="180" y="469">frozen + LoRA</text>
-			<text x="180" y="565">frozen + LoRA</text>
-			<text x="180" y="661">frozen + LoRA</text>
+			<rect x="105" y="120" width="150" height="48" rx="12" />
+			<rect x="105" y="208" width="150" height="48" rx="12" />
+			<rect x="105" y="296" width="150" height="48" rx="12" />
+			<rect x="105" y="384" width="150" height="48" rx="12" />
+			<rect x="105" y="472" width="150" height="48" rx="12" />
+			<rect x="105" y="560" width="150" height="48" rx="12" />
 		</g>
 
 		<!-- ───── value encode blocks (on the taps) ───── -->
 		<g class="box encode">
-			<rect x="250" y="198" width="84" height="34" rx="8" />
-			<rect x="250" y="390" width="84" height="34" rx="8" />
-			<rect x="250" y="582" width="84" height="34" rx="8" />
-			<rect x="250" y="709" width="84" height="34" rx="8" />
-		</g>
-		<g class="encode-label">
-			<text x="292" y="215">Value encode</text>
-			<text x="292" y="407">Value encode</text>
-			<text x="292" y="599">Value encode</text>
-			<text x="292" y="726">Value encode</text>
+			<rect x="250" y="174" width="72" height="28" rx="7" />
+			<rect x="250" y="350" width="72" height="28" rx="7" />
+			<rect x="250" y="526" width="72" height="28" rx="7" />
+			<rect x="250" y="634" width="72" height="28" rx="7" />
 		</g>
 
 		<!-- ───── value layers (red boxes) ───── -->
 		<g class="box value">
-			<rect x="380" y="192" width="100" height="46" rx="9" />
-			<rect x="380" y="384" width="100" height="46" rx="9" />
-			<rect x="380" y="576" width="100" height="46" rx="9" />
-		</g>
-		<g class="box-label small">
-			<text x="430" y="215">Value layer</text>
-			<text x="430" y="407">Value layer</text>
-			<text x="430" y="599">Value layer</text>
+			<rect x="380" y="168" width="100" height="40" rx="9" />
+			<rect x="380" y="344" width="100" height="40" rx="9" />
+			<rect x="380" y="520" width="100" height="40" rx="9" />
 		</g>
 
 		<!-- ───── endpoint labels ───── -->
 		<text class="label base-label" x="180" y="40">Token Prediction</text>
 		<text class="label value-label" x="430" y="40">Value Prediction</text>
-		<text class="label" x="180" y="786">Token Embedding</text>
-		<text class="label" x="490" y="786">Last Reward</text>
+		<text class="label" x="180" y="710">Token Embedding</text>
+		<text class="label" x="490" y="710">Last Reward</text>
 	</svg>
 
 	<ul class="legend">
+		<li class="box-base">
+			<svg class="swatch" viewBox="0 0 30 12" aria-hidden="true">
+				<rect x="4" y="0.75" width="22" height="10.5" rx="3" />
+			</svg>
+			<span>Base layer (frozen + LoRA)</span>
+		</li>
+		<li class="box-value">
+			<svg class="swatch" viewBox="0 0 30 12" aria-hidden="true">
+				<rect x="4" y="0.75" width="22" height="10.5" rx="3" />
+			</svg>
+			<span>Value layer</span>
+		</li>
+		<li class="box-encode">
+			<svg class="swatch" viewBox="0 0 30 12" aria-hidden="true">
+				<rect x="4" y="0.75" width="22" height="10.5" rx="3" />
+			</svg>
+			<span>Value encode</span>
+		</li>
 		<li class="fwd">
 			<svg class="swatch" viewBox="0 0 30 12" aria-hidden="true">
 				<line x1="2" y1="6" x2="20" y2="6" />
@@ -227,6 +207,7 @@
 		--base: #4faa3c;
 		--value: #d2473c;
 		--label: var(--pico-color);
+		--encode-fill: color-mix(in srgb, var(--value) 14%, var(--pico-background-color, Canvas));
 	}
 
 	/* Deeper accents read better on the light background. */
@@ -273,10 +254,6 @@
 		stroke-linecap: round;
 	}
 
-	.junction circle {
-		fill: var(--fwd);
-	}
-
 	.box rect {
 		stroke-width: 1.5;
 	}
@@ -292,36 +269,8 @@
 	}
 
 	.box.encode rect {
-		fill: color-mix(in srgb, var(--value) 14%, var(--pico-background-color, Canvas));
+		fill: var(--encode-fill);
 		stroke: var(--value);
-	}
-
-	.box-label text {
-		fill: #fff;
-		font-size: 15px;
-		font-weight: 600;
-		text-anchor: middle;
-		dominant-baseline: middle;
-	}
-
-	.box-label.small text {
-		font-size: 13px;
-	}
-
-	.box-sublabel text {
-		fill: #fff;
-		opacity: 0.85;
-		font-size: 11px;
-		text-anchor: middle;
-		dominant-baseline: middle;
-	}
-
-	.encode-label text {
-		fill: var(--label);
-		font-size: 11px;
-		font-weight: 600;
-		text-anchor: middle;
-		dominant-baseline: middle;
 	}
 
 	.label {
@@ -370,6 +319,25 @@
 
 	.swatch path {
 		fill: currentColor;
+	}
+
+	.swatch rect {
+		stroke-width: 1;
+	}
+
+	.legend li.box-base .swatch rect {
+		fill: var(--base);
+		stroke: color-mix(in srgb, var(--base) 65%, #000);
+	}
+
+	.legend li.box-value .swatch rect {
+		fill: var(--value);
+		stroke: color-mix(in srgb, var(--value) 65%, #000);
+	}
+
+	.legend li.box-encode .swatch rect {
+		fill: var(--encode-fill);
+		stroke: var(--value);
 	}
 
 	.legend li.fwd .swatch {
