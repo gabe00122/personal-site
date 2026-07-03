@@ -51,25 +51,25 @@
 		     at final destinations. -->
 		<g class="fwd">
 			<!-- base residual stream: token embedding -> token prediction -->
-			<line x1="180" y1="680" x2="180" y2="54" marker-end="url(#arch-arrow)" />
+			<line x1="190" y1="680" x2="190" y2="54" marker-end="url(#arch-arrow)" />
 
 			<!-- value residual stream: input merge -> value prediction -->
-			<line x1="430" y1="642" x2="430" y2="54" marker-end="url(#arch-arrow)" />
+			<line x1="440" y1="642" x2="440" y2="54" marker-end="url(#arch-arrow)" />
 
 			<!-- taps: every 2nd base latent -> value encode -> value layer -->
-			<line x1="180" y1="182" x2="376" y2="182" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="358" x2="376" y2="358" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="534" x2="376" y2="534" marker-end="url(#arch-arrow)" />
+			<line x1="190" y1="182" x2="376" y2="182" marker-end="url(#arch-arrow)" />
+			<line x1="190" y1="358" x2="376" y2="358" marker-end="url(#arch-arrow)" />
+			<line x1="190" y1="534" x2="376" y2="534" marker-end="url(#arch-arrow)" />
 
 			<!-- token embedding feeds the value net (and, separately, the policy above) -->
-			<line x1="180" y1="642" x2="430" y2="642" />
+			<line x1="190" y1="642" x2="440" y2="642" />
 			<!-- last reward feeds only the value net -->
-			<path d="M490,684 L490,622 L430,622" fill="none" />
+			<path d="M490,684 L490,622 L440,622" fill="none" />
 		</g>
 
 		<!-- ───── policy backward pass (green, flows down the base stream) ───── -->
 		<g class="bwd-policy">
-			<line x1="160" y1="54" x2="160" y2="556" marker-end="url(#arch-arrow)" />
+			<line x1="170" y1="54" x2="170" y2="556" marker-end="url(#arch-arrow)" />
 		</g>
 
 		<!-- ───── value backward pass (red, flows down the value stream) ───── -->
@@ -78,7 +78,7 @@
 			<line x1="380" y1="194" x2="326" y2="194" marker-end="url(#arch-arrow)" />
 			<line x1="380" y1="370" x2="326" y2="370" marker-end="url(#arch-arrow)" />
 			<line x1="380" y1="546" x2="326" y2="546" marker-end="url(#arch-arrow)" />
-			<path d="M410,54 L410,654 L326,654" fill="none" marker-end="url(#arch-arrow)" />
+			<path d="M420,54 L420,654 L326,654" fill="none" marker-end="url(#arch-arrow)" />
 		</g>
 
 		<!-- stop-gradient marks on the taps -->
