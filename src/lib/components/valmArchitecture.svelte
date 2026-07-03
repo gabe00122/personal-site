@@ -46,22 +46,15 @@
 			</marker>
 		</defs>
 
-		<!-- ───── forward pass (grey, flows up) ───── -->
+		<!-- ───── forward pass (grey, flows up) ─────
+		     Residual streams are throughlines behind the boxes; arrowheads only
+		     at final destinations. -->
 		<g class="fwd">
-			<!-- base residual stream -->
-			<line x1="180" y1="680" x2="180" y2="612" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="560" x2="180" y2="524" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="472" x2="180" y2="436" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="384" x2="180" y2="348" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="296" x2="180" y2="260" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="208" x2="180" y2="172" marker-end="url(#arch-arrow)" />
-			<line x1="180" y1="120" x2="180" y2="54" marker-end="url(#arch-arrow)" />
+			<!-- base residual stream: token embedding -> token prediction -->
+			<line x1="180" y1="680" x2="180" y2="54" marker-end="url(#arch-arrow)" />
 
-			<!-- value residual stream (bottom segment rises from the input merge) -->
-			<line x1="430" y1="642" x2="430" y2="564" marker-end="url(#arch-arrow)" />
-			<line x1="430" y1="520" x2="430" y2="388" marker-end="url(#arch-arrow)" />
-			<line x1="430" y1="344" x2="430" y2="212" marker-end="url(#arch-arrow)" />
-			<line x1="430" y1="168" x2="430" y2="54" marker-end="url(#arch-arrow)" />
+			<!-- value residual stream: input merge -> value prediction -->
+			<line x1="430" y1="642" x2="430" y2="54" marker-end="url(#arch-arrow)" />
 
 			<!-- taps: every 2nd base latent -> value encode -> value layer -->
 			<line x1="180" y1="182" x2="376" y2="182" marker-end="url(#arch-arrow)" />
@@ -69,32 +62,23 @@
 			<line x1="180" y1="534" x2="376" y2="534" marker-end="url(#arch-arrow)" />
 
 			<!-- token embedding feeds the value net (and, separately, the policy above) -->
-			<line x1="180" y1="642" x2="426" y2="642" marker-end="url(#arch-arrow)" />
+			<line x1="180" y1="642" x2="430" y2="642" />
 			<!-- last reward feeds only the value net -->
-			<path d="M490,684 L490,622 L434,622" fill="none" marker-end="url(#arch-arrow)" />
+			<path d="M490,684 L490,622 L430,622" fill="none" />
 		</g>
 
 		<!-- ───── policy backward pass (green, flows down the base stream) ───── -->
 		<g class="bwd-policy">
-			<line x1="160" y1="54" x2="160" y2="116" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="168" x2="160" y2="204" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="256" x2="160" y2="292" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="344" x2="160" y2="380" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="432" x2="160" y2="468" marker-end="url(#arch-arrow)" />
-			<line x1="160" y1="520" x2="160" y2="556" marker-end="url(#arch-arrow)" />
+			<line x1="160" y1="54" x2="160" y2="556" marker-end="url(#arch-arrow)" />
 		</g>
 
 		<!-- ───── value backward pass (red, flows down the value stream) ───── -->
 		<g class="bwd-value">
-			<line x1="410" y1="54" x2="410" y2="164" marker-end="url(#arch-arrow)" />
-			<line x1="410" y1="208" x2="410" y2="340" marker-end="url(#arch-arrow)" />
-			<line x1="410" y1="384" x2="410" y2="516" marker-end="url(#arch-arrow)" />
-
 			<!-- value gradient feeds into (but not through) each value-encode block -->
 			<line x1="380" y1="194" x2="326" y2="194" marker-end="url(#arch-arrow)" />
 			<line x1="380" y1="370" x2="326" y2="370" marker-end="url(#arch-arrow)" />
 			<line x1="380" y1="546" x2="326" y2="546" marker-end="url(#arch-arrow)" />
-			<path d="M410,560 L410,654 L326,654" fill="none" marker-end="url(#arch-arrow)" />
+			<path d="M410,54 L410,654 L326,654" fill="none" marker-end="url(#arch-arrow)" />
 		</g>
 
 		<!-- stop-gradient marks on the taps -->
