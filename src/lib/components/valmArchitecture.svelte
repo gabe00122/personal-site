@@ -8,9 +8,9 @@
 		caption = 'The base layers (frozen Qwen3 blocks with LoRA adapters) form the policy, running ' +
 			'from the token embedding up to the token prediction. A scaled-down transformer with fewer ' +
 			'layers runs alongside as the value network, fed by the token embedding and the last reward ' +
-			'— the reward never enters the policy. Every n-th base latent is projected into the value ' +
-			'stream through a SwiGLU value-encode block; the ⫽ marks are stop-gradients, so the policy ' +
-			'and value gradients never cross.'
+			'— the reward never enters the policy. The token embedding and every n-th base latent are ' +
+			'projected into the value stream through SwiGLU value-encode blocks; the ⫽ marks are ' +
+			'stop-gradients, so the policy and value gradients never cross.'
 	}: Props = $props();
 </script>
 
@@ -21,8 +21,9 @@
 		role="img"
 		aria-label="A ladder value network running parallel to the Qwen3 base model. Grey arrows show
 			the forward pass flowing up: the token embedding flows up through a stack of six base layers,
-			each a frozen Qwen3 block with a LoRA adapter, to the token prediction. The token embedding
-			and the last reward together feed a parallel value stream of three smaller value layers
+			each a frozen Qwen3 block with a LoRA adapter, to the token prediction. The token embedding, tapped through
+			its own stop-gradient value-encode block, and the last reward together feed a parallel
+			value stream of three smaller value layers
 			ending in the value prediction. The output of every second base layer is tapped through a
 			value-encode block into a value layer; a stop-gradient mark on each tap shows that value
 			gradients cannot flow back into the base model. Green arrows show the policy gradient
@@ -97,6 +98,8 @@
 			<line x1="223" y1="415" x2="231" y2="399" />
 			<line x1="214" y1="607" x2="222" y2="591" />
 			<line x1="223" y1="607" x2="231" y2="591" />
+			<line x1="214" y1="734" x2="222" y2="718" />
+			<line x1="223" y1="734" x2="231" y2="718" />
 		</g>
 
 		<!-- forward junction dots -->
@@ -140,11 +143,13 @@
 			<rect x="250" y="198" width="84" height="34" rx="8" />
 			<rect x="250" y="390" width="84" height="34" rx="8" />
 			<rect x="250" y="582" width="84" height="34" rx="8" />
+			<rect x="250" y="709" width="84" height="34" rx="8" />
 		</g>
 		<g class="encode-label">
 			<text x="292" y="215">Value encode</text>
 			<text x="292" y="407">Value encode</text>
 			<text x="292" y="599">Value encode</text>
+			<text x="292" y="726">Value encode</text>
 		</g>
 
 		<!-- ───── value layers (red boxes) ───── -->
