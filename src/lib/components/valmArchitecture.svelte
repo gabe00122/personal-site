@@ -1,19 +1,3 @@
-<script lang="ts">
-	interface Props {
-		/** Optional caption shown beneath the diagram. */
-		caption?: string;
-	}
-
-	let {
-		caption = 'The base layers (frozen Qwen3 blocks with LoRA adapters) form the policy, running ' +
-			'from the token embedding up to the token prediction. A scaled-down transformer with fewer ' +
-			'layers runs alongside as the value network, fed by the token embedding and the last reward ' +
-			'— the reward never enters the policy. The token embedding and every n-th base latent are ' +
-			'projected into the value stream through SwiGLU value-encode blocks. The value gradient ' +
-			'trains the encode blocks but stops at the ⫽ stop-gradient marks, so the policy and value ' +
-			'gradients never cross.'
-	}: Props = $props();
-</script>
 
 <figure class="arch-figure">
 	<svg
@@ -174,10 +158,6 @@
 			<span>Stop-gradient</span>
 		</li>
 	</ul>
-
-	{#if caption}
-		<figcaption>{caption}</figcaption>
-	{/if}
 </figure>
 
 <style>

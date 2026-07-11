@@ -26,7 +26,7 @@ This method is closest to [POISE](https://arxiv.org/abs/2605.07579) - concurrent
 
 ## Why critics fell out of favor
 
-Historically, learned value functions for LLM PPO have usually taken one of two forms. The first is to train a value model at roughly LLM scale, which is expensive. The second is to attach a small value head to the final hidden state before the language-model projection. This is much cheaper, but it creates a different problem: the final hidden state is tightly coupled to the next-token distribution. Because almost every direction in the final latent affects the logits, attaching a value loss there risks fighting the policy objective while also not using the most useful representation within the base model for long-horizon prediction.
+Historically, learned value functions for LLM PPO have usually taken one of two forms. The first is to train a value model at roughly LLM scale, which is expensive. The second is to attach a small value head to the final hidden state before the language-model projection. This is much cheaper, but it creates a different problem: the final hidden state is tightly coupled to the next-token distribution. Because almost every direction in the final latent affects the logits, attaching a value loss there risks fighting the policy objective while also not using the most useful representation within the base model for calculating a belief state.
 
 GRPO, on the other hand, has a different failure mode: when a partial reward is dense but a larger reward is sparse, the group normalization gives the dense reward more weight than the larger but sparse reward, creating a bias that can produce strong attractors.
 
@@ -46,7 +46,7 @@ The two streams are:
 
 **Value layer** - a scaled-down version of the Qwen3 architecture with its own attention layers. These form the parallel value network, running from the last reward up to the value prediction.
 
-**Value encode** - every n-th base latent is projected into the value stream through a stop-gradient SwiGLU block, so gradients from the value loss never flow back into the base model. I use a SwiGLU-style MLP block with normalization so the value network can selectively filter latents from the base model into its residual stream.
+**Value encode** - every n-th base latent is projected into the value stream through a stop-gradient SwiGLU block, so gradients from the value loss never flow back into the base model. I use a SwiGLU-style MLP block with normalization so the value network can selectively filter latents from the base model into its residual stream. This is to prevent the residuals from the base model from drowning out the signal in the value networks residual stream, the gating in SwiGLU allows existing information to be protected.
 
 ### Stop Gradient Risks
 The stop gradients allow us to use separate Adam optimizers for value and policy and protect the policy from the value network's gradients, but they create the limitation that the value network cannot request information from the base model; it can only observe what happens to be there. This risk is hopefully mitigated by 1) taking latents from multiple and potentially redundant locations and 2) providing the value network with its own attention layers.
@@ -77,24 +77,24 @@ For GRPO, a full game is considered one rollout and so all the per-turn rewards 
 
 The Qwen3 implementation, continuous-batching-based rollout generator, and training algorithm are all implemented from scratch with JAX and open-sourced here: https://github.com/gabe00122/valm.
 
-Continuous batching inference is compiled into a JAX JIT step so that tokens are generated in a `jax.lax.fori_loop` until an entire turn is ready. Despite the implementation being relatively simple, for short context lengths its batched inference throughput rivals vLLM (~8000 tokens/s). Slots are kept in VRAM until the episode is complete, which means prompt caching requires no load/offload from VRAM, but the downside of this is that it requires the environments to be fast so they do not leave idle slots for long. In order to keep the environments as fast as possible, they are implemented in Rust.
+Continuous batching inference is compiled into a JAX JIT step so that tokens are generated in a `jax.lax.fori_loop` until an entire turn is ready. Despite the implementation being relatively simple, for short context lengths its batched inference throughput rivals vLLM (~8000 tokens/s). Slots are kept in VRAM until the episode is complete, which means prompt caching requires no load/offload from VRAM, but the downside of this is that it requires the environments to be fast so they do not leave idle slots for long. In order to keep the environments as fast as possible (and because it's fun!), they are implemented in Rust.
 
 ## Loss Function
 
-Standard GAE is applied, but with fresh values recalculated in the loss function rather than saved from the rollout generation like typical PPO. This, however, means that the value network is only used in the loss function and does not impact rollout generation. Policy loss is masked to tokens generated by the model (so not prompt tokens), while value loss propagates and is bootstrapped through both prompt and policy tokens. When importance sampling correction is used, the IS ratios are clamped to 1.0 for prompt tokens as well. A discount of 1.0 is applied to most tokens, but at the turn boundary the discount is set to 0.97 for one token to encourage finishing the game in fewer turns. 
+Standard GAE is applied, but with fresh values recalculated in the loss function rather than saved from the rollout generation like typical PPO. I only ever use one epoch but the values might still be stale because of continuous batching. This, however, means that the value network is only used in the loss function and does not impact rollout generation. Policy loss is masked to tokens generated by the model (so not prompt tokens), while value loss propagates and is bootstrapped through both prompt and policy tokens. A discount of 1.0 is applied to most tokens, but at the turn boundary the discount is set to 0.97 for one token to encourage finishing the game in fewer turns. 
 
 ## Value warmup
 
-The value network is warmed up on frozen policy weights so that online learning begins with value estimates in a reasonable range. The value loss is calculated with an HL-Gauss value head, following [Stop Regressing](https://arxiv.org/abs/2403.03950), which itself demonstrated transformer value functions on Wordle, a precedent for both choices here. It's notable that the Stop Regressing paper trained a transformer-based model on Wordle specifically and saw a 43% gain over MSE.
+The value network is warmed up on frozen policy weights so that online learning begins with value estimates in a reasonable range. Because the values are calculated fresh within the loss function on every update the same loss function can be used for both value warmup and online learning. The value loss is calculated with an HL-Gauss value head, following [Stop Regressing](https://arxiv.org/abs/2403.03950), which itself demonstrated transformer value functions on Wordle, a precedent for both choices here. It's notable that the Stop Regressing paper trained a transformer-based model on Wordle specifically and saw a 43% gain over MSE.
 
 After the warmup we can generate value approximations, but Qwen3 4B Instruct has poor performance before training, around a 0-1% solve rate.
 <EpisodeViewer
     metric="value"
     episodes={[
-  		{ url: "/blog/valm/episode-1.json", label: "One" },
-  		{ url: "/blog/valm/episode-2.json", label: "Two" },
-      { url: "/blog/valm/episode-3.json", label: "Three" },
-      { url: "/blog/valm/episode-4.json", label: "Four" }
+  		{ url: "/blog/valm/vt-0.json", label: "One" },
+  		{ url: "/blog/valm/vt-1.json", label: "Two" },
+      { url: "/blog/valm/vt-2.json", label: "Three" },
+      { url: "/blog/valm/vt-3.json", label: "Four" }
     ]}
   />
 
@@ -108,48 +108,88 @@ Data from the rollout generation is passed through a circular buffer that yields
 
 GRPO is implemented in the same framework for comparison. Episodes are assigned to groups, with each episode in the group receiving the same seed and, in the case of Wordle, the same hidden word. Because episodes from different groups may finish out of order, the group data as it hits the data pipe is interleaved and must be reconstructed with an alternative buffer that uses group ID to accumulate groups. When an episode finishes, that env/slot begins on the next available group ID.
 
-A group size of 8 was used with a batch size of 32.
+## Experiement
 
-GRPO Warm Start:
-The warm-start run is initialized at the PPO LoRA checkpoint at a 40% solve rate; this is a rough analog of SFT warmup.
+With three seeds per training config I tested PPO with the value transformer and HL gauss, PPO without the value transformer and a last latent prob only, MSE instead of the HL gauss head, monte carlo returns with lambda 1.0 vs 0.95 in the other experiments.
+Grpo starting from the base model (grpo-cold) and grpo starting from a value transformer checkpoint at 10% solve rate (grpo-warm)
 
+GRPO was learning a different objective from the PPO runs, PPO was learning to maximize a discount returned while grpo's objective was undiscounted. These means that while PPO was incentivized to use fewer turns to get a solution grpo was actually incentivized to wait until the last turn and maximize information before awnsering.
 
-## Results
+The same policy, (and value where applicable) learning rates were used for all of these models, it is possible that some of these runs would have worked better with more tuning. In particular I suspect monte carlo learning might just need the learning rate reduced to better adapt to the higher variance advantages.
 
+**Shared settings** (all runs unless noted below):
+
+| | Setting | Value |
+|---|---|---|
+| **Model** | Base model | Qwen3-4B-Instruct-2507 |
+| | Max sequence length | 1024 |
+| **Policy (LoRA)** | Rank | 64 |
+| | Applied to | Attention + MLP |
+| | Optimizer | AdamW, lr 4e-5, β₁ 0.9, β₂ 0.98, wd 0.01 |
+| | Schedule | Cosine, 10% warmup |
+| | Grad norm clip | 1.0 |
+| **Value transformer** | Layers | 12 |
+| | Embed dim | 256 |
+| | Attention | 8 heads (8 KV), head dim 32 |
+| | MLP width | 512 |
+| | Latent encoder rank | 256 |
+| | Optimizer | AdamW, lr 1e-4, β₁ 0.9, β₂ 0.98, wd 0.01 |
+| **PPO loss** | Clip range | 0.2 low / 0.28 high |
+| | GAE λ | 0.95 |
+| | Discount | 1.0 (0.97 at turn boundaries) |
+| | Entropy bonus | None |
+| **Training** | Parallel envs | 16 |
+| | Total episodes | 25,000 |
+| | Rollout envs | 64 |
+
+**Per-method differences:**
+
+| Run | Differs from shared config |
+|---|---|
+| VT + HL-Gauss | — (reference config). HL-Gauss head: 51 bins, σ 0.02, support [−0.1, 1.1] |
+| VT + MSE | MSE value head |
+| Last-latent only | Value net reads only the final hidden state; 0 value transformer layers |
+| Monte Carlo | GAE λ = 1.0 (turn λ also 1.0) |
+| GRPO | No critic; group size 8; group-normalized sequence-level advantage |
+
+### Speed
 When benchmarking the update function (the only place GRPO and PPO differ in this implementation), GRPO is only 6% faster than PPO with the ~25.8M parameter value transformer. This is because the latents used to calculate the policy loss can be reused to calculate the value loss, and the value transformer is tiny compared to the base model, being only 0.6% of total parameters.
 
-### Training metrics
+<Image url="/blog/valm/vs_vt.webp" description="" alt="" />
 
-### Performance
+Looking at solve rate HL gauss vs MSE was a null result, I was not able to reproduce the result from the stop regressing paper (on the same environment!).
 
-Not only does the solve rate go up, but the model also learns to use the response context as a sort of scratchpad space to search through letter permutations based on the known constraints. This scratchpad strategy evolves over the course of training, and it's not entirely clear whether it is important to the policy or a vestigial artifact. Not only does value approximation lead to learning, but bootstrapped returns are also more effective than Monte Carlo returns. 
 
-### Experiments
+Every model trained with the value transformer was ahead of every model trained with the last latent only (although there was one seed that came very close). The value transformer learned in a consistent band while last latent only had significantly more per seed variance. Monte carlo learning with lambda 1.0 diverged completely in 50% of runs, here I have just plotted the survivors (3 out of 6). GRPO from a cold start gets stuck maximizing partial credit rewards and never learns to solve the game consistantly. From a warm start grpo consistantly learns but under preforms the value transformer.
 
-TODO:
-Test MSE over HL-Gauss
+<Image url="/blog/valm/vs_vt_reward.webp" description="" alt="" />
+Total reward tells a similar story although you can see cold start grpo improves on partial credit but not on solve rate.
+
+
+<Image url="/blog/valm/vs_vt_turns.webp" description="" alt="" />
+
+<Image url="/blog/valm/ev_mean_bands.webp" description="" alt="" />
+
 
 ### Episode viewer
 
 <EpisodeViewer
   metric="value"
   episodes={[
-		{ url: "/blog/valm/episode-380001.json", label: "One" },
-		{ url: "/blog/valm/episode-380002.json", label: "Two" },
-    { url: "/blog/valm/episode-380003.json", label: "Three" },
-    { url: "/blog/valm/episode-380004.json", label: "Four" }
+		{ url: "/blog/valm/vt-399996.json", label: "One" },
+		{ url: "/blog/valm/vt-399997.json", label: "Two" },
+    { url: "/blog/valm/vt-399998.json", label: "Three" },
+    { url: "/blog/valm/vt-399999.json", label: "Four" }
   ]}
 />
 
-## Limitations
-Wordle is a relatively short-context environment; I'm not sure if these results will hold for longer contexts.
-Wordle is also a fairly narrow task about constraint satisfaction.
+You can see the value steps up on the turn level discount and steps down when the partial reward is banked.
 
 ## Next steps
 
 While this demonstrates that value transformers can be used to fine-tune a model for Wordle, Wordle itself might differ significantly from other environments, particularly those with long context lengths. Bootstrapping needs to be proven on both harder environments and with longer contexts. 
 
-The value nets for LLMs could be taken a step further by treating latents as a high-dimensional action space and using a SAC-style pathwise gradient to train the latents used by the value network as the continuous actions.
+The value nets for LLMs could be taken a step further by treating latents as a high-dimensional action space and using a SAC-style pathwise gradient to train some of the latents used by the value network as the continuous actions.
 
 # References
 
