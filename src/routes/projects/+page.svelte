@@ -28,6 +28,7 @@
 			<hr />
 			<ProjectCard
 				name="VALM"
+				writeup="/posts/valm"
 				description="JAX-based framework for online RL with LLMs. Custom Qwen3 implementation with LoRA support."
 				repo="https://github.com/gabe00122/valm"
 			/>

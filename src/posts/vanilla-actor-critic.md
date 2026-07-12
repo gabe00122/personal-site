@@ -16,17 +16,17 @@ published: true
     import Image from "$lib/components/image.svelte";
 </script>
 
-# Introduction
+## Introduction
 
 I recently finished reading [Reinforcement Learning: An Introduction by Sutton and Barto](http://incompleteideas.net/book/the-book-2nd.html). Inspired by the book, I implemented the actor-critic algorithm and learned a lot. My first step was translating the pseudocode outlined in the book into JAX. If you're new to reinforcement learning, it's better to start by implementing a solution to a [multi-armed bandit problem](https://en.wikipedia.org/wiki/Multi-armed_bandit) and familiarize yourself with [temporal difference learning](https://en.wikipedia.org/wiki/Temporal_difference_learning) as these are foundational concepts.
 
-## Reinforcement Learning
+### Reinforcement Learning
 
 Reinforcement learning is a class of algorithms designed to train a model, called a policy, to take actions that maximize the total reward received over time. It is called reinforcement learning because rewards reinforce behaviors that lead to higher rewards.
 
 These algorithms require functional approximation, with deep learning being a particularly promising approach.
 
-## Actor Critics
+### Actor Critics
 
 Actor-critics are a class of reinforcement learning algorithms that use two models to teach each other. Both the actor and the critic observe the environment as input but produce different outputs.
 
@@ -39,11 +39,11 @@ The actor model can use the critic's value estimations to adjust the action dist
 
 In this way, the actor and critic balance, continually adjusting towards a better policy.
 
-# Implementation
+## Implementation
 
 I started with the pseudocode for a one-step actor-critic from Sutton and Barto. I recommend reading this book yourself, but I'll do my best to translate the notation into an intuitive explanation.
 
-## One-step Actor-Critic (episodic), for estimating $\pi_\theta\approx\pi_*$
+### One-step Actor-Critic (episodic), for estimating $\pi_\theta\approx\pi_*$
 
 > Input: a differentiable policy parameterization $\pi(a|s,\boldsymbol{\theta})$  
 > Input: a differentiable state-value function parameterization $\hat{\upsilon}(s,\bold{w})$  
@@ -75,7 +75,7 @@ Some notes on the above:
   - $\pi(A|S,\boldsymbol{\theta})$ this gives of the likelihood a given action would be selected under the current policy
   - $\hat{\upsilon}(S, \bold{w})$ this is the estimate of the cumulative discounted reward starting at S
 
-### Data Structures
+#### Data Structures
 
 ```python
 class TrainingState(NamedTuple):
@@ -96,7 +96,7 @@ class UpdateArgs(NamedTuple):
     done: ArrayLike
 ```
 
-## Sample an action
+### Sample an action
 
 $\pi (\sdot|S,\boldsymbol{\theta})$
 
@@ -113,9 +113,9 @@ def sample_action(actor_model, training_state, obs, rng_key):
     return random.categorical(rng_key, logits)
 ```
 
-## Update our parameters
+### Update our parameters
 
-### Calculating the TD error
+#### Calculating the TD error
 
 $\delta \leftarrow R + \gamma \hat{\upsilon}(S', \bold{w}) - \hat{\upsilon}(S, \bold{w})$
 
@@ -143,7 +143,7 @@ def temporal_difference_error(critic_model, critic_params, update_args):
     return td_error
 ```
 
-### Updating the critic
+#### Updating the critic
 
 $\bold{w} \leftarrow \bold{w} + \alpha^\bold{w} \delta \nabla \hat\upsilon (S,\bold{w})$
 
@@ -176,7 +176,7 @@ def update_critic(critic_model, critic_params, update_args, td_error):
     return critic_params
 ```
 
-### Updating the actor
+#### Updating the actor
 
 $\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha^{\boldsymbol{\theta}}I\nabla \ln \pi(A|S,\boldsymbol{\theta})$
 
@@ -205,7 +205,7 @@ def update_actor(actor_model, actor_params, update_args, td_error, importance):
     return actor_params
 ```
 
-### Combined Update Function
+#### Combined Update Function
 
 ```python
 @partial(jax.jit, static_argnums=(0, 1))
@@ -234,7 +234,7 @@ def update_models(
     )
 ```
 
-### Training loop
+#### Training loop
 
 Now we can bring it all together with a complete training loop with the gymnasium library (you can also use [Gymnax](https://github.com/RobertTLange/gymnax) to run your environment on the gpu along with your training code)
 
@@ -271,7 +271,7 @@ for step in range(total_steps):
 
 For a full example of the code, see: https://github.com/gabe00122/tutorial_actor_critic/tree/main/tutorial_actor_critic/part1
 
-# Results
+## Results
 
 Here are the hyper parameters I used for training on gym cart-pole, 500 is the max score.
 
@@ -297,7 +297,7 @@ critic_features = (64, 64)
     alt="A video of a cart-pole policy after 800,000 steps training"
 />
 
-# Next Steps
+## Next Steps
 
 This is only a basic implementation of an actor-critic algorithm.
 While this basic implementation is effective for environments like CartPole, the actor-critic algorithm is a versatile tool that, with the right techniques and improvements, can be harnessed to handle a wide range of complex problems.
