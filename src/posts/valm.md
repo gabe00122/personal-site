@@ -79,7 +79,7 @@ For GRPO, a full game is considered one rollout, so all the per-turn rewards are
 
 The Qwen3 implementation, continuous-batching-based rollout generator, and training algorithm are all implemented from scratch with JAX and open-sourced here: https://github.com/gabe00122/valm.
 
-Continuous-batching inference is compiled into a JAX JIT step so that tokens are generated in a `jax.lax.fori_loop` until an entire turn is ready. Despite the implementation being relatively simple, its batched inference throughput rivals vLLM for short context lengths (~8000 tokens/s). Slots are kept in VRAM until the episode is complete, which means prompt caching requires no loading or offloading from VRAM. The downside is that the environments need to be fast so they do not leave slots idle for long. To keep the environments as fast as possible (and because it's fun!), they are implemented in Rust.
+Continuous-batching inference is compiled into a JAX JIT step so that tokens are generated in a `jax.lax.while_loop` until an entire turn is ready. Despite the implementation being relatively simple, its batched inference throughput rivals vLLM for short context lengths (~8000 tokens/s). Slots are kept in VRAM until the episode is complete, which means prompt caching requires no loading or offloading from VRAM. The downside is that the environments need to be fast so they do not leave slots idle for long. To keep the environments as fast as possible (and because it's fun!), they are implemented in Rust.
 
 
 Data from the rollout generation is passed through a circular buffer that yields batches to the update function when it has accumulated a full update batch worth of episodes. The update function uses the same model weights as rollout generation, saving VRAM.
