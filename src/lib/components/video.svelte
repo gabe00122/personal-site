@@ -6,12 +6,13 @@
 
 	let { url, description }: Props = $props();
 
+	const uid = $props.id();
 	let poster = $derived(url.replace(/\.mp4$/, '-poster.webp'));
 </script>
 
 <figure class="video-container">
-	<figcaption id="video-caption" class="centered-text">{description}</figcaption>
-	<video playsinline controls muted aria-describedby="video-caption" {poster}>
+	<figcaption id="video-caption-{uid}" class="centered-text">{description}</figcaption>
+	<video playsinline controls muted aria-describedby="video-caption-{uid}" {poster}>
 		<source src={url} type="video/mp4" />
 	</video>
 </figure>

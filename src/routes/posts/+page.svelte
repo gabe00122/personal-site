@@ -1,6 +1,10 @@
 <script lang="ts">
+	import Seo from '$lib/components/seo.svelte';
+
 	let { data } = $props();
 </script>
+
+<Seo title="Posts" description="Occasional writing on my projects and ideas." />
 
 <div class="container">
 	<article class="centered-card">

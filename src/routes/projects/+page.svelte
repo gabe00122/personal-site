@@ -1,10 +1,12 @@
 <script lang="ts">
 	import ProjectCard from './projectCard.svelte';
+	import Seo from '$lib/components/seo.svelte';
 </script>
 
-<svelte:head>
-	<title>Projects</title>
-</svelte:head>
+<Seo
+	title="Projects"
+	description="Projects in reinforcement learning, JAX, and multi-agent systems."
+/>
 
 <div class="container">
 	<article class="centered-card">

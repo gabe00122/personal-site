@@ -1,3 +1,12 @@
+<script lang="ts">
+	import Seo from '$lib/components/seo.svelte';
+</script>
+
+<Seo
+	title="About"
+	description="Software engineer and self-taught machine learning researcher studying how agents learn to communicate and cooperate through reinforcement learning."
+/>
+
 <div class="container">
 	<article class="centered-card">
 		<hgroup>

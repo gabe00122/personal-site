@@ -1,7 +1,7 @@
 ---
 
-title: Value functions for LLMs
-description: Value functions for LLM fine-tuning
+title: Ladder style value transformers for LLM fine tuning
+description: Tuning Qwen3 4b with a custom RL architecture from scratch
 date: '2026-07-12'
 published: true
 ---

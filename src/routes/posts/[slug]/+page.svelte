@@ -1,14 +1,11 @@
 <script lang="ts">
 	import { formatDate } from '$lib/utils';
+	import Seo from '$lib/components/seo.svelte';
 
 	let { data } = $props();
 </script>
 
-<svelte:head>
-	<title>{data.meta.title}</title>
-	<meta property="og:type" content="article" />
-	<meta property="og:title" content={data.meta.title} />
-</svelte:head>
+<Seo title={data.meta.title} description={data.meta.description} type="article" />
 
 <div class="container">
 	<article class="centered-card">

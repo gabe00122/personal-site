@@ -3,9 +3,9 @@ import { browser } from '$app/environment';
 
 type Theme = 'light' | 'dark';
 
-const userTheme = browser && localStorage.getItem('color-scheme');
+const userTheme = browser ? (localStorage.getItem('color-scheme') as Theme | null) : null;
 
-export const theme = writable(userTheme ?? 'dark');
+export const theme = writable<Theme>(userTheme ?? 'dark');
 
 export const darkColor = 'rgb(194, 199, 208)';
 export const lightColor = 'rgb(55, 60, 68)';

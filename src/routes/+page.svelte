@@ -1,7 +1,8 @@
-<svelte:head>
-	<title>Gabriel Keith</title>
-	<meta name="description" content="I teach agents from experience in social environments." />
-</svelte:head>
+<script lang="ts">
+	import Seo from '$lib/components/seo.svelte';
+</script>
+
+<Seo description="I teach agents from experience in social environments." />
 
 <div class="landing">
 	<h1>Gabriel Keith</h1>
