@@ -1,3 +1,28 @@
+/* ---------------------------------------------------------------------------
+   Design tokens
+   Type:   IBM Plex Sans (UI + body), IBM Plex Mono (code + metadata)
+   Layout: single 42rem reading column, no card chrome
+   --------------------------------------------------------------------------- */
+
+:root {
+	--pico-font-family-sans-serif:
+		'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif;
+	--pico-font-family-monospace:
+		'IBM Plex Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code', Menlo, monospace;
+	--pico-font-family: var(--pico-font-family-sans-serif);
+	--pico-line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	--pico-font-weight: 600;
+	letter-spacing: -0.015em;
+}
+
 [data-theme='light'],
 :root:not([data-theme='dark']) {
 	--pico-header-border-color: transparent;
@@ -18,7 +43,107 @@
 	--pico-header-border-color: rgba(32, 38, 50, 0.9);
 }
 
-.centered-card {
-	max-width: 40rem;
-	margin: 1rem auto var(--pico-block-spacing-vertical) auto;
+/* Reading column: replaces the old Pico <article> card */
+.content-column {
+	max-width: 42rem;
+	margin-inline: auto;
+	padding: 2.5rem var(--pico-spacing) 4rem;
+}
+
+/* Page title + subtitle */
+.page-title {
+	font-size: 1.75rem;
+	margin-bottom: 0.25rem;
+}
+
+.page-subtitle {
+	color: var(--pico-muted-color);
+	margin-bottom: 2.5rem;
+}
+
+/* Metadata: dates, small labels */
+.meta {
+	font-family: var(--pico-font-family-monospace);
+	font-size: 0.8125rem;
+	color: var(--pico-muted-color);
+}
+
+/* Item lists (posts, projects) */
+.item-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2.25rem;
+}
+
+.item-title {
+	font-size: 1.1875rem;
+	margin: 0.125rem 0 0.25rem;
+}
+
+.item-title a {
+	color: inherit;
+	text-decoration: underline;
+	text-decoration-color: var(--pico-muted-border-color);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.25em;
+}
+
+.item-title a:hover,
+.item-title a:focus-visible {
+	color: var(--pico-primary);
+	text-decoration-color: currentColor;
+}
+
+.item-description {
+	color: var(--pico-muted-color);
+	font-size: 0.9375rem;
+	margin: 0;
+}
+
+/* Long-form post content */
+.prose {
+	font-size: 1.0625rem;
+	line-height: 1.7;
+}
+
+.prose h2 {
+	font-size: 1.4rem;
+	margin-top: 2.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.prose h3 {
+	font-size: 1.17rem;
+	margin-top: 2rem;
+	margin-bottom: 0.75rem;
+}
+
+.prose :where(pre, code, kbd) {
+	font-size: 0.875rem;
+}
+
+.prose :where(h2, h3, h4) {
+	position: relative;
+	scroll-margin-top: 5rem;
+}
+
+/* rehype-autolink-headings prepends an empty anchor; give it a hover-revealed “#” */
+.prose :where(h2, h3, h4) .icon-link::before {
+	content: '#';
+	position: absolute;
+	left: -1.1em;
+	color: var(--pico-muted-color);
+	opacity: 0;
+	transition: opacity 0.15s ease-in-out;
+}
+
+.prose :where(h2, h3, h4):hover .icon-link::before,
+.prose :where(h2, h3, h4) a:focus-visible .icon-link::before {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	html {
+		scroll-behavior: smooth;
+	}
 }
