@@ -29,7 +29,7 @@ This framing is related to prior work on action embeddings for discrete action s
 
 LLMs already perform probabilistic token sampling, which suggests an alternative. If a latent representation lies between two token embeddings, the model naturally samples each token with some probability. Rather than snapping to the nearest embedding, this effectively creates a stochastic interpolation between discrete actions. In this sense, nearest-neighbor projection behaves like a hard max over embeddings, while token sampling behaves more like a softmax, producing a smoother value function over latent space.
 
-LLMs also conveniently provide action embeddings as their token embeddings; unlike most RL work with action embeddings (e.g., [Learning Action Representations for Reinforcement Learning](https://arxiv.org/pdf/1902.00183), Chen et al., 2019), they do not need to be learned.
+LLMs also conveniently provide action embeddings as their token embeddings; unlike most RL work with action embeddings (e.g., [Learning Action Representations for Reinforcement Learning](https://arxiv.org/pdf/1902.00183), Chen et al., 2019), they do not need to be learned. The token sampling can be seen as a probabilistic mapping function between a latent action from a inner policy and a discrete action from the outer policy. Deterministic mapping functions create a value function that is piecewise constant within regions while probabilistic mappings replace that with a smooth mixture and a smooth landscape is exactly the precondition for pathwise gradients to exist at all. 
 
 I plan to explore this idea with my existing [valm framework](https://github.com/gabe00122/valm) (see also [my post on valm](/posts/valm)).
 
