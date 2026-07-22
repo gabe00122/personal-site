@@ -1,14 +1,15 @@
 /* ---------------------------------------------------------------------------
    Design tokens
-   Type:   IBM Plex Sans (UI + body), IBM Plex Mono (code + metadata)
+   Type:   Atkinson Hyperlegible Next (UI + body), JetBrains Mono (code + metadata)
    Layout: single 42rem reading column, no card chrome
    --------------------------------------------------------------------------- */
 
 :root {
 	--pico-font-family-sans-serif:
-		'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif;
+		'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue',
+		sans-serif;
 	--pico-font-family-monospace:
-		'IBM Plex Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code', Menlo, monospace;
+		'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code', Menlo, monospace;
 	--pico-font-family: var(--pico-font-family-sans-serif);
 	--pico-line-height: 1.6;
 }
